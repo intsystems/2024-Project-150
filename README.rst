@@ -23,7 +23,7 @@
 Abstract
 ========
 
-This paper addresses the well-known Max Cut problem, which has various applications both in machine learning and theoretical physics. The Max Cut problem is computationally intractable (NP hard) over general graphs. The main purpose of the study is to empirically improve the Max-Cut approximation quality in polynomial time. This problem is solvable in polynomial time for graphs with small tree-width, while the SDP or Lovász-Schrijver relaxations are used to approximate the Max-Cut value over general graphs. We achieve an improvement of approximation quality by combining relaxation approaches and the tree-width ideas. 
+This paper addresses the well-known Max Cut problem, which has various applications both in machine learning and theoretical physics. The Max Cut problem is computationally intractable (NP hard) over general graphs. The main purpose of the study is to empirically improve the Max-Cut approximation quality in polynomial time. This problem is solvable in polynomial time for graphs with small tree-width, while the SDP or Lovász-Schrijver relaxations are used to approximate the Max-Cut value over general graphs. We achieve the described improvement of approximation quality by combining relaxation approaches and the tree-width ideas. 
 
 
 Research publications
