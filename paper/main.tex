@@ -1,6 +1,5 @@
 \documentclass{article}
 \usepackage{arxiv}
-
 \usepackage[utf8]{inputenc}
 \usepackage[english, russian]{babel}
 \usepackage[T1]{fontenc}
@@ -16,22 +15,25 @@
 
 
 
-\title{A template for the \emph{arxiv} style}
 
-\author{ David S.~Hippocampus\thanks{Use footnote for providing further
-		information about author (webpage, alternative
-		address)---\emph{not} for acknowledging funding agencies.} \\
-	Department of Computer Science\\
-	Cranberry-Lemon University\\
-	Pittsburgh, PA 15213 \\
-	\texttt{hippo@cs.cranberry-lemon.edu} \\
+\author{ Sergei Anikin \\
+% \thanks{Use footnote for providing further
+% 		information about author (webpage, alternative
+% 		address)---\emph{not} for acknowledging funding agencies.} \\
+	Chair of Data Analysis\\
+	MIPT\\
+    Moscow, Russia\\
+	% Pittsburgh, PA 15213 \\
+	\texttt{anikin.sd@phystech.edu} \\
 	%% examples of more authors
 	\And
-	Elias D.~Striatum \\
-	Department of Electrical Engineering\\
-	Mount-Sheikh University\\
-	Santa Narimana, Levand \\
-	\texttt{stariate@ee.mount-sheikh.edu} \\
+	Alexandr Bulkin \\
+	MSU \\
+    Faculty of Mechanics and Mathematics \\
+	Moscow, Russia\\
+    \texttt{a.bulkin@iccda.io} \\
+	% Santa Narimana, Levand \\
+	% \texttt{stariate@ee.mount-sheikh.edu} \\
 	%% \AND
 	%% Coauthor \\
 	%% Affiliation \\
@@ -66,93 +68,139 @@ pdfkeywords={First keyword, Second keyword, More},
 \maketitle
 
 \begin{abstract}
-	\lipsum[1]
+	This paper addresses the well-known Max Cut problem, which has various applications both in machine learning and theoretical physics. The Max Cut problem is computationally intractable over general graphs. This paper presents a novel empirical approach aimed at enhancing the quality of Max-Cut approximations within polynomial time bounds. While the problem is tractable for graphs with small tree-width, its solution over general graphs often relies on Semi-Definite Programming or Lovász-Schrijver relaxations. We achieve the described improvement of approximation quality by combining relaxation approaches, the tree-width ideas and various heuristics described in the paper.
+
+
+
+
 \end{abstract}
 
 
-\keywords{First keyword \and Second keyword \and More}
+\keywords{SDP \and Treewidth \and Max Cut \and Lovász-Schrijver relaxations}
 
-\section{Introduction}
-\lipsum[2]
-\lipsum[3]
+% \section{Introduction}
+% \lipsum[2]
+% \lipsum[3]
 
-\section{Headings: first level}
-\label{sec:headings}
+% \section{Headings: first level}
+% \label{sec:headings}
 
-\lipsum[4] See Section \ref{sec:headings}.
+% \lipsum[4] See Section \ref{sec:headings}.
 
-\subsection{Headings: second level}
-\lipsum[5]
-\begin{equation}
-	\xi _{ij}(t)=P(x_{t}=i,x_{t+1}=j|y,v,w;\theta)= {\frac {\alpha _{i}(t)a^{w_t}_{ij}\beta _{j}(t+1)b^{v_{t+1}}_{j}(y_{t+1})}{\sum _{i=1}^{N} \sum _{j=1}^{N} \alpha _{i}(t)a^{w_t}_{ij}\beta _{j}(t+1)b^{v_{t+1}}_{j}(y_{t+1})}}
-\end{equation}
+% \subsection{Headings: second level}
+% \lipsum[5]
+% \begin{equation}
+% 	\xi _{ij}(t)=P(x_{t}=i,x_{t+1}=j|y,v,w;\theta)= {\frac {\alpha _{i}(t)a^{w_t}_{ij}\beta _{j}(t+1)b^{v_{t+1}}_{j}(y_{t+1})}{\sum _{i=1}^{N} \sum _{j=1}^{N} \alpha _{i}(t)a^{w_t}_{ij}\beta _{j}(t+1)b^{v_{t+1}}_{j}(y_{t+1})}}
+% \end{equation}
 
-\subsubsection{Headings: third level}
-\lipsum[6]
+% \subsubsection{Headings: third level}
+% \lipsum[6]
 
-\paragraph{Paragraph}
-\lipsum[7]
-
-
-
-\section{Examples of citations, figures, tables, references}
-\label{sec:others}
-
-\subsection{Citations}
-Citations use \verb+natbib+. The documentation may be found at
-\begin{center}
-	\url{http://mirrors.ctan.org/macros/latex/contrib/natbib/natnotes.pdf}
-\end{center}
-
-Here is an example usage of the two main commands (\verb+citet+ and \verb+citep+): Some people thought a thing \citep{kour2014real, hadash2018estimate} but other people thought something else \citep{kour2014fast}. Many people have speculated that if we knew exactly why \citet{kour2014fast} thought this\dots
-
-\subsection{Figures}
-\lipsum[10]
-See Figure \ref{fig:fig1}. Here is how you add footnotes. \footnote{Sample of the first footnote.}
-\lipsum[11]
-
-\begin{figure}
-	\centering
-	\includegraphics[width=0.5\textwidth]{../figures/log_reg_cs_exp.eps}
-	\caption{Sample figure caption.}
-	\label{fig:fig1}
-\end{figure}
-
-\subsection{Tables}
-See awesome Table~\ref{tab:table}.
-
-The documentation for \verb+booktabs+ (`Publication quality tables in LaTeX') is available from:
-\begin{center}
-	\url{https://www.ctan.org/pkg/booktabs}
-\end{center}
+% \paragraph{Paragraph}
+% \lipsum[7]
 
 
-\begin{table}
-	\caption{Sample table title}
-	\centering
-	\begin{tabular}{lll}
-		\toprule
-		\multicolumn{2}{c}{Part}                   \\
-		\cmidrule(r){1-2}
-		Name     & Description     & Size ($\mu$m) \\
-		\midrule
-		Dendrite & Input terminal  & $\sim$100     \\
-		Axon     & Output terminal & $\sim$10      \\
-		Soma     & Cell body       & up to $10^6$  \\
-		\bottomrule
-	\end{tabular}
-	\label{tab:table}
-\end{table}
 
-\subsection{Lists}
-\begin{itemize}
-	\item Lorem ipsum dolor sit amet
-	\item consectetur adipiscing elit.
-	\item Aliquam dignissim blandit est, in dictum tortor gravida eget. In ac rutrum magna.
-\end{itemize}
+% \section{Examples of citations, figures, tables, references}
+% \label{sec:others}
+
+% \subsection{Citations}
+% Citations use \verb+natbib+. The documentation may be found at
+% \begin{center}
+% 	\url{http://mirrors.ctan.org/macros/latex/contrib/natbib/natnotes.pdf}
+% \end{center}
+
+% Here is an example usage of the two main commands (\verb+citet+ and \verb+citep+): Some people thought a thing \citep{kour2014real, hadash2018estimate} but other people thought something else \citep{kour2014fast}. Many people have speculated that if we knew exactly why \citet{kour2014fast} thought this\dots
+
+% \subsection{Figures}
+% \lipsum[10]
+% See Figure \ref{fig:fig1}. Here is how you add footnotes. \footnote{Sample of the first footnote.}
+% \lipsum[11]
+
+% \begin{figure}
+% 	\centering
+% 	\includegraphics[width=0.5\textwidth]{../figures/log_reg_cs_exp.eps}
+% 	\caption{Sample figure caption.}
+% 	\label{fig:fig1}
+% \end{figure}
+
+% \subsection{Tables}
+% See awesome Table~\ref{tab:table}.
+
+% The documentation for \verb+booktabs+ (`Publication quality tables in LaTeX') is available from:
+% \begin{center}
+% 	\url{https://www.ctan.org/pkg/booktabs}
+% \end{center}
+
+
+% \begin{table}
+% 	\caption{Sample table title}
+% 	\centering
+% 	\begin{tabular}{lll}
+% 		\toprule
+% 		\multicolumn{2}{c}{Part}                   \\
+% 		\cmidrule(r){1-2}
+% 		Name     & Description     & Size ($\mu$m) \\
+% 		\midrule
+% 		Dendrite & Input terminal  & $\sim$100     \\
+% 		Axon     & Output terminal & $\sim$10      \\
+% 		Soma     & Cell body       & up to $10^6$  \\
+% 		\bottomrule
+% 	\end{tabular}
+% 	\label{tab:table}
+% \end{table}
+
+% \subsection{Lists}
+% \begin{itemize}
+% 	\item Lorem ipsum dolor sit amet
+% 	\item consectetur adipiscing elit.
+% 	\item Aliquam dignissim blandit est, in dictum tortor gravida eget. In ac rutrum magna.
+% \end{itemize}
 
 
 \bibliographystyle{unsrtnat}
 \bibliography{references}
+
+[1] Goemans-Williamson MAXCUT Approximation Algorithm by Jin-Yi Cai, Christopher Hudzik, Sarah Knoop, 2003:
+https://pages.cs.wisc.edu/~jyc/02-810notes/lecture20.pdf \\
+
+[2] The Lovasz-Schrijver relaxation by Madhur Tulsiani, 2010: 
+https://home.ttic.edu/~madhurt/Papers/ls.pdf \\
+
+% [3] Introduction to the SDP by Robert M. Freund, 2004: https://ocw.mit.edu/courses/15-084j-nonlinear-programming-spring-2004/a632b565602fd2eb3be574c537eea095_lec23_semidef_opt.pdf\\
+
+[4] Treewidth: 
+https://www.cs.cmu.edu/~odonnell/toolkit13/lecture17.pdf\\
+
+[5] MAX CUT approximation algorithm and UGC-hardness, Lecture by Irit Dinur and Amey Bhangale:
+https://www.wisdom.weizmann.ac.il/~dinuri/courses/19-inapprox/lec6.pdf \\
+
+[6] Semidefinite Programming versus Burer-Monteiro Factorization for Matrix
+Sensing by Baturalp Yalcin, Ziye Ma, Javad Lavaei, Somayeh Sojoudi, 2022
+https://arxiv.org/abs/2208.07469v1\\
+
+[7] 0.878-approximation for the Max-Cut problem, Lecture by Divya Padmanabhan, 2022: https://www.iitgoa.ac.in/~sreejithav/misc/maxcut.pdf\\
+
+[8] Rank optimality for the Burer-Monteiro factorization by Irène Waldspurger, Alden Waters, 2019 
+https://arxiv.org/abs/1812.03046\\
+
+[9] Semidefinite relaxation and nonconvex quadratic optimization by Yury Nesterov, 1997
+https://www.tandfonline.com/doi/abs/10.1080/10556789808805690\\
+
+[10] Datasets: Texas Data Repository:
+https://dataverse.tdl.org/dataset.xhtml?persistentId=doi:10.18738/T8/VLTIVC\\  
+
+[11] Datasets: Biq Mac Library:
+https://biqmac.aau.at/biqmaclib.html\\ 
+
+[12] Datasets: MaxCut and BQP Instance Library:
+http://bqp.cs.uni-bonn.de/library/html/index.html\\ 
+
+[13] Datasets: MaxCut Instances:
+https://grafo.etsii.urjc.es/optsicom/maxcut.html#best-known-values\\
+
+
+
+
 
 \end{document}
