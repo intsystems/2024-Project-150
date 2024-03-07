@@ -17,9 +17,6 @@
 
 
 \author{ Sergei Anikin \\
-% \thanks{Use footnote for providing further
-% 		information about author (webpage, alternative
-% 		address)---\emph{not} for acknowledging funding agencies.} \\
 	Chair of Data Analysis\\
 	MIPT\\
     Moscow, Russia\\
@@ -32,23 +29,6 @@
     Faculty of Mechanics and Mathematics \\
 	Moscow, Russia\\
     \texttt{a.bulkin@iccda.io} \\
-	% Santa Narimana, Levand \\
-	% \texttt{stariate@ee.mount-sheikh.edu} \\
-	%% \AND
-	%% Coauthor \\
-	%% Affiliation \\
-	%% Address \\
-	%% \texttt{email} \\
-	%% \And
-	%% Coauthor \\
-	%% Affiliation \\
-	%% Address \\
-	%% \texttt{email} \\
-	%% \And
-	%% Coauthor \\
-	%% Affiliation \\
-	%% Address \\
-	%% \texttt{email} \\
 }
 \date{}
 
@@ -65,8 +45,9 @@ pdfkeywords={First keyword, Second keyword, More},
 }
 
 \begin{document}
+\title{Tree-width driven SDP for MAX CUT problem
+}
 \maketitle
-
 \begin{abstract}
 	This paper addresses the well-known Max Cut problem, which has various applications both in machine learning and theoretical physics. The Max Cut problem is computationally intractable over general graphs. This paper presents a novel empirical approach aimed at enhancing the quality of Max-Cut approximations within polynomial time bounds. While the problem is tractable for graphs with small tree-width, its solution over general graphs often relies on Semi-Definite Programming or Lovász-Schrijver relaxations. We achieve the described improvement of approximation quality by combining relaxation approaches, the tree-width ideas and various heuristics described in the paper.
 
@@ -78,11 +59,24 @@ pdfkeywords={First keyword, Second keyword, More},
 
 \keywords{SDP \and Treewidth \and Max Cut \and Lovász-Schrijver relaxations}
 
-% \section{Introduction}
-% \lipsum[2]
-% \lipsum[3]
+\section{Introduction}
+In this paper, we will discuss a non-asymptotic improvement of the solution to the MAX CUT problem - the problem of finding the maximum cut in  undirected graphs. It involves partitioning the vertices of a graph into two sets such that the number of edges between the two sets (the cut) is maximized. This problem has applications in many spheres, including machine learning, theoretical physics, and theoretical computer science. It serves as a basis for developing approximation algorithms and heuristic methods for solving other optimization problems. Currently, for graphs in general, the best solutions proposed by X. Goemans and David P. Williamson find a cut that contains at least 0.878… of the edges in the optimal cut [link]. There are families of graphs for which this bound is asymptotically optimal unless P = NP.
+\\
+\\
+In this article, we focus on a non-asymptotic improvement of the solution in polynomial time on arbitrary graphs. The known solution utilizes Semi-Definite Programming problems, and here, we present reasoning that allows solving them with greater accuracy by combining optimization ideas, tree-width approach, and heuristics.
 
-% \section{Headings: first level}
+
+\section{Problem statement}
+We focus on weighted undirected graphs, where each edge (i, j) is assigned a weight $w_{ij}$. As the graph is undirected,$w_{ij} = w_{ji}$. Such graphs are represented as G = (V, E), where V denotes the set of vertices and E is the symmetric matrix with $w_{ij}$ indicating the weight of edge (i, j). Later we will refer to weighted undirected graphs simply as graphs.
+
+Given a fixed graph G = (V, E) with the sum of weights denoted by W, a cut in the graph is defined as a subset $S \subseteq V$. The complement of S is denoted by $T = V \setminus S$. Notably, a cut partitions the vertices into two sets: S and T. Additionally, the edges are divided into three categories: those entirely within S, those entirely within T, and those split by the cut, where one vertex lies in S and the other in T. 
+Let's define W(S) to be the weight of the cut: 
+$$W(S) = \sum_{i \in S} \sum_{j \notin S} w_{ij}$$
+
+Our goal is to find in polynomial time cut $S_{found} \subseteq V$, such that the value ratio is as big as possible $$ratio = \frac{W(S_{found})}{\max_{S \subseteq V}{W(S)}} \rightarrow \max$$ 
+
+We decide on the efficiency of provided algorithm by comparing it with well-known ones using the different datasets [10 - 13]
+
 % \label{sec:headings}
 
 % \lipsum[4] See Section \ref{sec:headings}.
@@ -158,6 +152,8 @@ pdfkeywords={First keyword, Second keyword, More},
 % \end{itemize}
 
 
+
+
 \bibliographystyle{unsrtnat}
 \bibliography{references}
 
@@ -199,8 +195,9 @@ http://bqp.cs.uni-bonn.de/library/html/index.html\\
 [13] Datasets: MaxCut Instances:
 https://grafo.etsii.urjc.es/optsicom/maxcut.html#best-known-values\\
 
+[14] Ellipsoid algorithm: https://www.cs.toronto.edu/~avner/teaching/S5-2411/ln/lecture8.pdf
 
-
+[15] Michel X. Goemans and David P. Williamson. Improved approximation algorithms for maximum cut and satisfiability problems using semidefinite programming. Journal of the ACM, 42(6):1115–1145, 1995
 
 
 \end{document}
