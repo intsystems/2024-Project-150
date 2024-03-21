@@ -1,0 +1,2 @@
+5Solved the SDP-relaxed max-cut problem.
+Solution cuts off 0.587244 share of total weights.
