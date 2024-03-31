@@ -12,7 +12,9 @@
 \usepackage{graphicx}
 \usepackage{natbib}
 \usepackage{doi}
+\usepackage{amsmath}
 
+\DeclareMathOperator{\tr}{Tr}
 
 
 
@@ -24,7 +26,7 @@
 	\texttt{anikin.sd@phystech.edu} \\
 	%% examples of more authors
 	\And
-	Alexandr Bulkin \\
+	Alexander Bulkin \\
 	MSU \\
     Faculty of Mechanics and Mathematics \\
 	Moscow, Russia\\
@@ -73,12 +75,67 @@ Given a fixed graph G = (V, E) with the sum of weights denoted by W, a cut in th
 Let's define W(S) to be the weight of the cut: 
 $$W(S) = \sum_{i \in S} \sum_{j \notin S} w_{ij}$$
 
-Our goal is to find in polynomial time cut $S_{found} \subseteq V$, such that the value ratio is as big as possible $$ratio = \frac{W(S_{found})}{\max_{S \subseteq V}{W(S)}} \rightarrow \max$$ 
+% Our goal is to find in polynomial time cut $S_{found} \subseteq V$, such that the value $ratio$ is as big as possible $$ratio = \frac{W(S_{found})}{\max_{S \subseteq V}{W(S)}} \rightarrow \max$$ 
+
+Our goal is to find in polynomial time cut $S_{found} \subseteq V$, such that the value $W(S_{found}$ is as big as possible $$W(S_{found})_{\substack{S_{found} \subseteq V}} \rightarrow \max$$ 
 
 We decide on the efficiency of provided algorithm by comparing it with well-known ones using the different datasets [10 - 13]
+\section{Theory}
+We find the approximate solution using SDP solution. First of all, we show, how SDP problem is connected to Max Cut. Let matrix L be L = \begin{bmatrix}
+    (\sum_{i = 1}^n w_{1i}) - w_{11} & -w_{12} & -w_{13} & \dots  & -w_{1n} \\
+    -w_{21} & (\sum_{i = 1}^n w_{2i}) - w_{11} & -w_{23} & \dots  & -w_{2n} \\
+    \vdots & \vdots & \vdots & \ddots & \vdots \\
+    -w_{n1} & -w_{n2} & -w_{n3} & \dots  & (\sum_{i = 1}^n w_{ni}) - w_{nn}
+\end{bmatrix}
+Then we state that $W(S) = \frac{1}{4} x\top L x$, where $x_{i} = 1$ if $x \in S$ and $x_{i} = -1$ if $x \in T$. It is easy to see: the coefficient before each variable $w_{ij}$  $1$ in both sides of equality equals to 1 if $i$ and $j$ are from parts of partition and equals to 0 otherwise.
 
+
+It means that our task is equivalent to finding $$OPT = \max_{\substack{x_i^2 = 1}} x^T L x$$ since $$\max_{\substack{S \subseteq V}} W(S) = \frac{1}{4} \max_{\substack{x_i^2 = 1}} x^T L x$$
+% Since it is known, that the problem of finding optimal solution is NP-hard, we relax this problem for another one by forgetting about the rank condition. We will call the relaxed problem SDP.
+
+Let's look at the dual problem for OPT. We will also call SDP a problem relaxed by forgetting about the rank condition.$$OPT = \max_{\substack{x_i^2 = 1}} x^T L x = \max_{\substack{x_i^2 = 1 \\ X = x^T x}} \Tr{LX} = \max_{\substack{X \succeq 0 \\ diag(X) = 1_n \\ rank(X) = 1}} \tr (L X) \leq \max_{\substack{X \succeq 0 \\ diag(X) = 1_n}} \tr (L X) = SDP$$
+
+Let's find the dual for SDP problem. 
+$$Dual = \max_{\substack{\lambda}} \min_{\substack{x}} \sum_{i=1}^n{\lambda_i (1  - x_{i}^2)} - \sum_{i, j}^n{x_{i}x_{j} L_{ij}} = \max_{\substack{\lambda}} \min_{\substack{x}} \sum_{i=1}^n{\lambda_i} - \sum_{i, j}^n{x_{i}x_{j} L_{ij}} - \sum_{i=1}^n{\lambda_i x_{i}^2}$$
+
+if $-L - Diag(\lambda) \not \succeq 0$ then $$\min_{\substack{x}}  \sum_{i=1}^n{\lambda_i} - \sum_{i, j}^n{x_{i}x_{j} L_{ij}} - \sum_{i=1}^n{\lambda_i x_{i}^2} = -\infty$$ since we can multiply the vector, which proves that $-L - Diag(\lambda) \not \succeq 0$, by constant and get the arbitrary small value. 
+
+And if $-L - Diag(\lambda) \succeq 0$, then  $$\min_{\substack{x}}  \sum_{i=1}^n{\lambda_i} - \sum_{i, j}^n{x_{i}x_{j} L_{ij}} - \sum_{i=1}^n{\lambda_i x_{i}^2} = \min_{\substack{x}} \sum_{i=1}^n{\lambda_i}$$
 % \label{sec:headings}
 
+This means that if we denote $\xi_i := -\lambda_i$, Dual problem can be rewritten this way: $$Dual = \max_{\substack{\lambda}} \min_{\substack{x}} \sum_{i=1}^n{\lambda_i (1  - x_{i}^2)} - \sum_{i, j}^n{x_{i}x_{j} L_{ij}} = \max_{\substack{\lambda: \\ -L - Diag(\lambda) \succeq 0}} \sum_{i=1}^n{\lambda_i} = \\ \max_{\substack{\xi: \\  Diag(\xi) \succeq L}} \sum_{i=1}^n{-\xi_i} =  \min_{\substack{\xi: \\  Diag(\xi) \succeq L}} \sum_{i=1}^n{\xi_i}$$
+
+Later we will try to approximate Dual value using tree-width ideas, but first of all let's prove the following Lemma.
+
+
+\textbf{Lemma} 
+$$Dual  =  \min_{\substack{\xi: \\  Diag(\xi) \succeq L}} \sum_{i=1}^n{\xi_i} = \min_{\substack{L_T \succeq L}} \max_{\substack{x: x_i^2 = 1}} x^T L_T x = TreeRel$$ where $L_T$ can be represented as $L_T = L_{tree} + Diagonal$, where $L_{tree}$ corresponds to Laplacian of a tree graph and Diag is a diagonal matrix with not negative values.
+
+Proof. It is well-known, that tree is a bipartite graph and hence the MaxCut value equals to the total sum of edges in the graph $$\max_{\substack{x: x_i^2 = 1}} x^T L_{tree} x = 4 \sum_{i} \sum_{j > i} w_{ij}$$
+
+Then it is easy to conclude, that if $L_T = L_{tree} + Diagonal$, then 
+$$\max_{\substack{x: x_i^2 = 1}} x^T L_T x = 4 \sum_{i} \sum_{j > i} w_{ij} + \tr(Diagonal)$$
+
+Now we show inequalities between $Dual = \min_{\substack{\xi: \\  Diag(\xi) \succeq L}} \sum_{i=1}^n{\xi_i}$ and $TreeRel = \min_{\substack{L_T \succeq L}} 4 \sum_{i} \sum_{j > i} w_{ij} + \tr(Diagonal)$.
+$Dual \ge TreeRel$ is obvious since for each matrix $Diag(\xi) \succeq L$ it is possible to take $L_T = Diag(\xi)$ (which means that we simply take the tree with all the weights equal to 0.
+
+Finally, $Dual \le TreeRel$. In order to show that for each $L_T = L_{tree} + Diagonal \succeq L$ we can construct a vector $\xi$, such that $Diag(\xi) \succeq L$ and $4 \sum_{i} \sum_{j > i} w_{ij} + \tr(Diagonal) = \sum_{i=1}^n{\xi_i}$. Let's take $\xi_i = Diagonal_{ii} + 2 \sum_{j=1}^n w_{ij}$. Then indeed $$\sum_{i=1}^n{\xi_i} = 4 \sum_{i} \sum_{j > i} w_{ij} + \tr(Diagonal)$$ 
+
+Finally, we notice that $Diag(\xi) - L_T$ is SDP and hence $Diag(\xi) \succeq L_T \succeq L$ which completes the proof.
+
+Let $t_{ij}$ be the weight of an edge between vertexes i and j in the tree.  $$Diag(\xi) - L_T = \begin{bmatrix}
+    (\sum_{i = 1}^n t_{1i}) & t_{12} & t_{13} & \dots  & t_{1n} \\
+    t_{21} & (\sum_{i = 1}^n t_{2i}) & t_{23} & \dots  & t_{2n} \\
+    \vdots & \vdots & \vdots & \ddots & \vdots \\
+    t_{n1} & t_{n2} & t_{n3} & \dots  & (\sum_{i = 1}^n t_{ni})
+\end{bmatrix}$$
+This matrix is symmetric and diagonally dominant with positive diagonal entries. It is known that such matrix is PSD. 
+
+
+
+
+
+% \min_{\substack{\xi: \\  Diag(\xi) \succeq L}} \tr(Diag(\xi))
 % \lipsum[4] See Section \ref{sec:headings}.
 
 % \subsection{Headings: second level}
@@ -156,7 +213,7 @@ We decide on the efficiency of provided algorithm by comparing it with well-know
 
 \bibliographystyle{unsrtnat}
 \bibliography{references}
-
+TODO: эта версия пока для себя, переделать все ссылки на лекции на ссылки на соответствующие статьи
 [1] Goemans-Williamson MAXCUT Approximation Algorithm by Jin-Yi Cai, Christopher Hudzik, Sarah Knoop, 2003:
 https://pages.cs.wisc.edu/~jyc/02-810notes/lecture20.pdf \\
 
