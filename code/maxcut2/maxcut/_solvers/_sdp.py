@@ -59,7 +59,6 @@ class MaxCutSDP(AbstractMaxCut):
         return answer
     def diag_oracle_solve(self, L, k):
         n = L.shape[0]
-
         print(n)
         depend_number = k // 2 + 1
         dp = [[0] * (2 ** depend_number) for i in range (n)]
