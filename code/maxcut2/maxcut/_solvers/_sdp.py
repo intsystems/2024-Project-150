@@ -59,32 +59,36 @@ class MaxCutSDP(AbstractMaxCut):
         return answer
     def diag_oracle_solve(self, L, k):
         n = L.shape[0]
+
         print(n)
-        dp = [[0] * (2 ** k) for i in range (n)]
+        depend_number = k // 2 + 1
+        dp = [[0] * (2 ** depend_number) for i in range (n)]
         for i in range(n):
-            for mask in range (2 ** k):
-                c = [0] * k
+            for mask in range (2 ** depend_number):
+                c = [0] * depend_number
                 copy_mask = mask
-                for bit in range(k):
+                for bit in range(depend_number):
                     c[bit] = copy_mask % 2
                     copy_mask //= 2
                 best_current_ans = 0
-
                 c_previous_0 = c[1:]
                 c_previous_1 = c[1:]
                 c_previous_0.append(0)
                 c_previous_1.append(1)
-                print(c)
-                for j in range(max(0, i - k // 2), i + 1):
-                    print(i, j)
-                    best_current_ans += c[0] * c[i - j] * L[i][j]
+                print(c, c_previous_0, c_previous_1)
+                for j in range(max(0, i - (k // 2)), i + 1):
+                    # print(i, j)
+                    best_current_ans += 2 * (c[0] * 2 - 1) * (c[i - j] * 2 - 1) * L[i][j]
+                best_current_ans -= L[i][i]
                 if i > 0:
                     best_current_ans += max(dp[i - 1][self.get_mask(c_previous_0)], dp[i - 1][self.get_mask(c_previous_1)])
                 dp[i][mask] = best_current_ans
+            print('dp', dp[i])
         answer = 0
-        for mask in range(2 ** k):
+        for mask in range(2 ** depend_number):
             answer = max(answer, dp[n - 1][mask])
-        print(answer)
+        print(answer / 4)
+        print(dp[i])
         return answer
 
     def solve(self, f, k = 1, basic=True, verbose=True):

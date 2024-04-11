@@ -40,13 +40,30 @@ ks = [1, 3, 5, 7, 9]
 graph = load_gset_graph(f"tests/G0")
 f = open(f'test_results/G0_results.txt', 'w')
 # f.write('5')
-L = np.array([[3 , -2 , -1 , 0 , 0] ,
-[ -2 , 9 , -4 , 0 , -3] ,
- [ -1 , -4 , 10 , -5 , 0] ,
-[0 , 0 , -5 , 6 , -1] ,
- [0 , -3 , 0 , -1 , 4]])
+
+L = np.array([
+[ 14, -10,  -4,   0   ,0],
+[-10,  14,  -3 , -1   ,0],
+[ -4,  -3  ,28 ,-15  ,-6],
+[  0 , -1, -15 , 24 , -8],
+[  0  , 0 , -6 , -8,  14]
+])
+
+
+# L = np.array([
+# [ 14, -10,  -4,   0   ,0],
+# [-10,  14,  -3 , -1   ,0],
+# [ -4,  -3  ,22 ,-15  ,-6],
+# [  0 , -1, -15 , 16 , -8],
+# [  0  , 0 , -6 , -8,  14]
+# ])
+# L = np.array([[3 , -2 , -1 , 0 , 0] ,
+# [ -2 , 9 , -4 , 0 , -3] ,
+#  [ -1 , -4 , 10 , -5 , 0] ,
+# [0 , 0 , -5 , 6 , -1] ,
+#  [0 , -3 , 0 , -1 , 4]])
 print(L.shape[0])
-k = 15
+k = 5
 sdp = MaxCutSDP(graph).diag_oracle_solve(L, k)
 ratio_of_success.append(sdp)
 # print(sdp.get_results(f, 'value'), sdp.get_results(f, 'cut'))
