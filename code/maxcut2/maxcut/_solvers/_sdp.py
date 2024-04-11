@@ -49,31 +49,75 @@ class MaxCutSDP(AbstractMaxCut):
             raise KeyError("Solver '%s' is not installed." % solver)
         self.solver = getattr(cp, solver)
 
-    def solve(self, f, verbose=True):
+    def get_mask(self, arr):
+        answer = 0
+        n = len(arr)
+        power_of_2 = 1
+        for i in range(n):
+            answer += arr[i] * power_of_2
+            power_of_2 *= 2
+        return answer
+    def diag_oracle_solve(self, L, k):
+        n = L.shape[0]
+        print(n)
+        dp = [[0] * (2 ** k) for i in range (n)]
+        for i in range(n):
+            for mask in range (2 ** k):
+                c = [0] * k
+                copy_mask = mask
+                for bit in range(k):
+                    c[bit] = copy_mask % 2
+                    copy_mask //= 2
+                best_current_ans = 0
+
+                c_previous_0 = c[1:]
+                c_previous_1 = c[1:]
+                c_previous_0.append(0)
+                c_previous_1.append(1)
+                print(c)
+                for j in range(max(0, i - k // 2), i + 1):
+                    print(i, j)
+                    best_current_ans += c[0] * c[i - j] * L[i][j]
+                if i > 0:
+                    best_current_ans += max(dp[i - 1][self.get_mask(c_previous_0)], dp[i - 1][self.get_mask(c_previous_1)])
+                dp[i][mask] = best_current_ans
+        answer = 0
+        for mask in range(2 ** k):
+            answer = max(answer, dp[n - 1][mask])
+        print(answer)
+        return answer
+
+    def solve(self, f, k = 1, basic=True, verbose=True):
         """Solve the SDP-relaxed max-cut problem.
 
         Resulting cut, value of the cut and solved matrix
         may be accessed through the `get_solution` method.
         """
         # Solve the program. Marginally adjust the matrix to be PSD if needed.
-        # matrix = self._solve_sdp()
-        matrix = self._solve_diag_sdp()
-
+        if basic:
+            matrix = self._solve_sdp()
+        else:
+            matrix = self._solve_diag_sdp(k)
+        max_value = -1
         matrix = nearest_psd(matrix)
-        # Get the cut defined by the matrix.
+            # Get the cut defined by the matrix.
         vectors = np.linalg.cholesky(matrix)
-        cut = get_partition(vectors)
-        # Get the value of the cut. Store results.
-        value, total = get_cut_value(self.graph, cut)
-        self._results = {'matrix': matrix, 'cut': cut, 'value': value}
+        for i in range(500):
+            cut = get_partition(vectors)
+            # Get the value of the cut. Store results.
+            value, total = get_cut_value(self.graph, cut)
+            self._results = {'matrix': matrix, 'cut': cut, 'value': value}
+            if value > max_value:
+                max_value = value
         # Optionally be verbose about the results.
         if verbose:
             f.write(
                 "Solved the SDP-relaxed max-cut problem.\n"
                 "Total weight is %f\n" 
                 "Value of the cut is %f\n" 
-                "Solution cuts off %f share of total weights." % (total, value, value / total)
+                "Solution cuts off %f share of total weights." % (total, max_value, max_value / total)
             )
+        return max_value / total
 
     def _solve_sdp(self):
         """Solve the SDP-relaxed max-cut problem.
@@ -89,25 +133,25 @@ class MaxCutSDP(AbstractMaxCut):
         problem = cp.Problem(cp.Maximize(cut), [cp.diag(matrix) == 1])
         # Solve the program.
         problem.solve(getattr(cp, self.solver))
-        print(matrix.value)
+        # print(matrix.value)
         return matrix.value
 
     def get_laplacian(self, W):
-        print(W)
+        # print(W)
         L = -np.array(W)
         for i in range(W.shape[0]):
             L[i][i] = np.sum(W[i])
-        print(L)
+        # print(L)
         return L
-    def _solve_diag_sdp(self):
+    def _solve_diag_sdp(self, k):
         """Solve the SDP-relaxed max-cut problem.
 
         Return the matrix maximizing <C, 1 - X>
         """
         # Gather properties of the graph to cut.
-        k = 5
+        # k = 1
         n = len(self.graph)
-        print(np.array(nx.adjacency_matrix(self.graph).toarray()).size)
+        # print(np.array(nx.adjacency_matrix(self.graph).toarray()).size)
 
         L = self.get_laplacian(np.array(nx.adjacency_matrix(self.graph).toarray()))
         X = cp.Variable((n, n), symmetric=True)
@@ -117,13 +161,22 @@ class MaxCutSDP(AbstractMaxCut):
             for j in range(n):
                 if (abs(i - j) > k // 2):
                     constraints.append(X[i][j] == 0)
-        func = cp.Minimize(cp.sum(X))
+        func = cp.Minimize(cp.trace(X))
         optim = cp.Problem(func, constraints)
         optim.solve()
-        print(optim.value)
-        print(X.value)
-        print(np.linalg.eigvals(X.value - L))
-        return X.value - L
+        # print(optim.value)
+        # print(X.value)
+        # print(np.linalg.eigvals(X.value - L))
+        # print(X.value)
+        adjacent = X.value - L
+        # Set up the semi-definite program.
+        matrix = cp.Variable((n, n), PSD=True)
+        cut = .25 * cp.sum(cp.multiply(adjacent, 1 - matrix))
+        problem = cp.Problem(cp.Maximize(cut), [cp.diag(matrix) == 1])
+        # Solve the program.
+        problem.solve(getattr(cp, self.solver))
+
+        return matrix.value
 
 
 def nearest_psd(matrix):

@@ -16,14 +16,14 @@ class AbstractMaxCut(metaclass=ABCMeta):
         self.graph = graph
         self._results = None
 
-    def get_results(self, item='cut', verbose=False):
+    def get_results(self, f, item='cut', verbose=False):
         """Return the lazy-evaluated max-cut results reached.
 
         item : whether to return the 'cut' itself, its 'value'
                or the initial 'matrix' solving the SDP program
         """
         if self._results is None:
-            self.solve(verbose)
+            self.solve(f, verbose)
         if item not in self._results:
             valid = ', '.join(["'%s'" % key for key in self._results.keys()])
             raise KeyError(
