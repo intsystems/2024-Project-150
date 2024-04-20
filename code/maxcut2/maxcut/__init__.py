@@ -62,12 +62,13 @@ L = np.array([
 #  [ -1 , -4 , 10 , -5 , 0] ,
 # [0 , 0 , -5 , 6 , -1] ,
 #  [0 , -3 , 0 , -1 , 4]])
-print(L.shape[0])
+# print(L.shape[0])
 k = 5
-graph = load_gset_graph(f"tests/rudy/{name}.{i}")
+# graph = load_gset_graph(f"tests/rudy/{name}.{i}")
 
 sdp = MaxCutSDP(graph).diag_oracle_solve(L, k)
 ratio_of_success.append(sdp)
+print(sdp)
 # print(sdp.get_results(f, 'value'), sdp.get_results(f, 'cut'))
 # print(sdp.get_solution('value'))
 # print(name, "basic", np.mean(np.array(ratio_of_success)))

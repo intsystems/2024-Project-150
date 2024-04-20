@@ -59,8 +59,9 @@ class MaxCutSDP(AbstractMaxCut):
         return answer
     def diag_oracle_solve(self, L, k):
         n = L.shape[0]
-        print(n)
+        # print(n)
         depend_number = k // 2 + 1
+        depend_number = min(depend_number, n)
         dp = [[0] * (2 ** depend_number) for i in range (n)]
         for i in range(n):
             for mask in range (2 ** depend_number):
@@ -74,7 +75,7 @@ class MaxCutSDP(AbstractMaxCut):
                 c_previous_1 = c[1:]
                 c_previous_0.append(0)
                 c_previous_1.append(1)
-                print(c, c_previous_0, c_previous_1)
+                # print(c, c_previous_0, c_previous_1)
                 for j in range(max(0, i - (k // 2)), i + 1):
                     # print(i, j)
                     best_current_ans += 2 * (c[0] * 2 - 1) * (c[i - j] * 2 - 1) * L[i][j]
@@ -82,13 +83,40 @@ class MaxCutSDP(AbstractMaxCut):
                 if i > 0:
                     best_current_ans += max(dp[i - 1][self.get_mask(c_previous_0)], dp[i - 1][self.get_mask(c_previous_1)])
                 dp[i][mask] = best_current_ans
-            print('dp', dp[i])
+            # print('dp', dp[i])
+        best_x = []
+        final_mask = 0
         answer = 0
         for mask in range(2 ** depend_number):
+            if dp[n - 1][mask] > answer:
+                final_mask = mask
             answer = max(answer, dp[n - 1][mask])
-        print(answer / 4)
-        print(dp[i])
-        return answer
+
+        c = [0] * depend_number
+        copy_mask = final_mask
+        for bit in range(depend_number):
+            c[bit] = copy_mask % 2
+            copy_mask //= 2
+        best_x = c.copy()
+        # print(best_x)
+        for i in range(n - 2, depend_number - 2, -1):
+            c_previous_0 = c[1:]
+            c_previous_1 = c[1:]
+            c_previous_0.append(0)
+            c_previous_1.append(1)
+            if dp[i][self.get_mask(c_previous_0)] > dp[i][self.get_mask(c_previous_1)]:
+                c = c_previous_0
+                best_x.append(0)
+            else:
+                c = c_previous_1
+                best_x.append(1)
+        best_x = best_x[::-1]
+        # print(answer / 4)
+        # print(dp[i])
+        #
+        # print(best_x)
+
+        return answer, best_x
 
     def solve(self, f, k = 1, basic=True, verbose=True):
         """Solve the SDP-relaxed max-cut problem.
