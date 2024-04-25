@@ -5,10 +5,137 @@
 import cvxpy as cp
 import networkx as nx
 import numpy as np
+import nevergrad as ng
 
-from maxcut._solvers.backend import (
+from _solvers.backend import (
     AbstractMaxCut, get_partition, get_cut_value
 )
+
+
+def get_mask(arr):
+    answer = 0
+    n = len(arr)
+    power_of_2 = 1
+    for i in range(n):
+        answer += arr[i] * power_of_2
+        power_of_2 *= 2
+    return answer
+
+
+def diag_oracle_solve(L, k):
+    n = L.shape[0]
+    # print(n)
+    depend_number = k // 2 + 1
+    depend_number = min(depend_number, n)
+    dp = [[0] * (2 ** depend_number) for i in range(n)]
+    for i in range(n):
+        for mask in range(2 ** depend_number):
+            c = [0] * depend_number
+            copy_mask = mask
+            for bit in range(depend_number):
+                c[bit] = copy_mask % 2
+                copy_mask //= 2
+            best_current_ans = 0
+            c_previous_0 = c[1:]
+            c_previous_1 = c[1:]
+            c_previous_0.append(0)
+            c_previous_1.append(1)
+            # print(c, c_previous_0, c_previous_1)
+            for j in range(max(0, i - (k // 2)), i + 1):
+                # print(i, j)
+                best_current_ans += 2 * (c[0] * 2 - 1) * (c[i - j] * 2 - 1) * L[i][j]
+            best_current_ans -= L[i][i]
+            if i > 0:
+                best_current_ans += max(dp[i - 1][get_mask(c_previous_0)], dp[i - 1][get_mask(c_previous_1)])
+            dp[i][mask] = best_current_ans
+        # print('dp', dp[i])
+    best_x = []
+    final_mask = 0
+    answer = 0
+    for mask in range(2 ** depend_number):
+        if dp[n - 1][mask] > answer:
+            final_mask = mask
+        answer = max(answer, dp[n - 1][mask])
+
+    c = [0] * depend_number
+    copy_mask = final_mask
+    for bit in range(depend_number):
+        c[bit] = copy_mask % 2
+        copy_mask //= 2
+    best_x = c.copy()
+    # print(best_x)
+    for i in range(n - 2, depend_number - 2, -1):
+        c_previous_0 = c[1:]
+        c_previous_1 = c[1:]
+        c_previous_0.append(0)
+        c_previous_1.append(1)
+        if dp[i][get_mask(c_previous_0)] > dp[i][get_mask(c_previous_1)]:
+            c = c_previous_0
+            best_x.append(0)
+        else:
+            c = c_previous_1
+            best_x.append(1)
+    best_x = best_x[::-1]
+    # print(answer / 4)
+    # print(dp[i])
+    #
+    # print(best_x)
+
+    return answer, best_x
+
+
+def mat_to_kdiag(X, n, k):
+    assert k % 2 == 1
+    kD = X
+    for i in range(n):
+        for j in range(n):
+            if abs(i - j) > k // 2:
+                kD[i][j] = 0
+    return kD
+
+
+def vec_to_kdiag(x, n, k):
+    assert k % 2 == 1
+    assert len(x) == (n * (n + 1) - (n - (k - 1) / 2 - 1) * (n - (k - 1) / 2)) // 2
+    kD = np.diag(x[:n])
+    current_index = n
+    for i in range(1, (k + 1) // 2):  # rows from 1 to k-1 / 2
+        for j in range(0, n - i):  # columns from 0 to n-1-i
+            kD[i + j][j] = x[current_index]
+            kD[j][i + j] = x[current_index]
+            current_index += 1
+    return kD
+
+
+def kdiag_to_vec(X, n, k):
+    assert k % 2 == 1
+    dim = (n * (n + 1) - (n - (k - 1) // 2 - 1) * (n - (k - 1) // 2)) // 2
+    x = np.zeros(dim)
+    current_index = 0
+    for i in range(0, (k + 1) // 2):  # from 1 to k-1 / 2
+        for j in range(0, n - i):  # from 0 to n-1-i
+            x[current_index] = X[i + j][j]
+            current_index += 1
+    return x
+
+
+def kdiag_solver(k, n, steps, L, OPT):
+    L0 = mat_to_kdiag(np.ones((n, n)), n, k)
+    #L0 = np.zeros((n,n))
+    dim = (n * (n + 1) - (n - (k - 1) // 2 - 1) * (n - (k - 1) // 2)) // 2
+    optimizer = OPT(parametrization=ng.p.Array(init=kdiag_to_vec(mat_to_kdiag(L, n, k) + L0, n, k)), budget=steps)
+
+    def semidef_kdiag(x):
+        return np.all(np.linalg.eigvals(vec_to_kdiag(x, n, k) - L) >= 0)
+
+    optimizer.parametrization.register_cheap_constraint(semidef_kdiag)
+
+    def oracul(x):
+        return diag_oracle_solve(vec_to_kdiag(x, n, k), k)
+
+    recommendation = optimizer.minimize(oracul)
+    answer = oracul(recommendation.value)
+    return answer, vec_to_kdiag(recommendation.value, n, k)
 
 
 class MaxCutSDP(AbstractMaxCut):
@@ -49,76 +176,7 @@ class MaxCutSDP(AbstractMaxCut):
             raise KeyError("Solver '%s' is not installed." % solver)
         self.solver = getattr(cp, solver)
 
-    def get_mask(self, arr):
-        answer = 0
-        n = len(arr)
-        power_of_2 = 1
-        for i in range(n):
-            answer += arr[i] * power_of_2
-            power_of_2 *= 2
-        return answer
-    def diag_oracle_solve(self, L, k):
-        n = L.shape[0]
-        # print(n)
-        depend_number = k // 2 + 1
-        depend_number = min(depend_number, n)
-        dp = [[0] * (2 ** depend_number) for i in range (n)]
-        for i in range(n):
-            for mask in range (2 ** depend_number):
-                c = [0] * depend_number
-                copy_mask = mask
-                for bit in range(depend_number):
-                    c[bit] = copy_mask % 2
-                    copy_mask //= 2
-                best_current_ans = 0
-                c_previous_0 = c[1:]
-                c_previous_1 = c[1:]
-                c_previous_0.append(0)
-                c_previous_1.append(1)
-                # print(c, c_previous_0, c_previous_1)
-                for j in range(max(0, i - (k // 2)), i + 1):
-                    # print(i, j)
-                    best_current_ans += 2 * (c[0] * 2 - 1) * (c[i - j] * 2 - 1) * L[i][j]
-                best_current_ans -= L[i][i]
-                if i > 0:
-                    best_current_ans += max(dp[i - 1][self.get_mask(c_previous_0)], dp[i - 1][self.get_mask(c_previous_1)])
-                dp[i][mask] = best_current_ans
-            # print('dp', dp[i])
-        best_x = []
-        final_mask = 0
-        answer = 0
-        for mask in range(2 ** depend_number):
-            if dp[n - 1][mask] > answer:
-                final_mask = mask
-            answer = max(answer, dp[n - 1][mask])
-
-        c = [0] * depend_number
-        copy_mask = final_mask
-        for bit in range(depend_number):
-            c[bit] = copy_mask % 2
-            copy_mask //= 2
-        best_x = c.copy()
-        # print(best_x)
-        for i in range(n - 2, depend_number - 2, -1):
-            c_previous_0 = c[1:]
-            c_previous_1 = c[1:]
-            c_previous_0.append(0)
-            c_previous_1.append(1)
-            if dp[i][self.get_mask(c_previous_0)] > dp[i][self.get_mask(c_previous_1)]:
-                c = c_previous_0
-                best_x.append(0)
-            else:
-                c = c_previous_1
-                best_x.append(1)
-        best_x = best_x[::-1]
-        # print(answer / 4)
-        # print(dp[i])
-        #
-        # print(best_x)
-
-        return answer, best_x
-
-    def solve(self, f, k = 1, basic=True, verbose=True):
+    def solve(self, f, k=1, basic=True, verbose=True):
         """Solve the SDP-relaxed max-cut problem.
 
         Resulting cut, value of the cut and solved matrix
@@ -131,7 +189,7 @@ class MaxCutSDP(AbstractMaxCut):
             matrix = self._solve_diag_sdp(k)
         max_value = -1
         matrix = nearest_psd(matrix)
-            # Get the cut defined by the matrix.
+        # Get the cut defined by the matrix.
         vectors = np.linalg.cholesky(matrix)
         for i in range(500):
             cut = get_partition(vectors)
@@ -144,8 +202,8 @@ class MaxCutSDP(AbstractMaxCut):
         if verbose:
             f.write(
                 "Solved the SDP-relaxed max-cut problem.\n"
-                "Total weight is %f\n" 
-                "Value of the cut is %f\n" 
+                "Total weight is %f\n"
+                "Value of the cut is %f\n"
                 "Solution cuts off %f share of total weights." % (total, max_value, max_value / total)
             )
         return max_value / total
@@ -174,6 +232,7 @@ class MaxCutSDP(AbstractMaxCut):
             L[i][i] = np.sum(W[i])
         # print(L)
         return L
+
     def _solve_diag_sdp(self, k):
         """Solve the SDP-relaxed max-cut problem.
 
