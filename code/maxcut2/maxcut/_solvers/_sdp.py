@@ -5,7 +5,6 @@
 import cvxpy as cp
 import networkx as nx
 import numpy as np
-import nevergrad as ng
 
 from _solvers.backend import (
     AbstractMaxCut, get_partition, get_cut_value
@@ -131,7 +130,8 @@ def kdiag_solver(k, n, steps, L, OPT):
     optimizer.parametrization.register_cheap_constraint(semidef_kdiag)
 
     def oracul(x):
-        return diag_oracle_solve(vec_to_kdiag(x, n, k), k)
+        y, _ = diag_oracle_solve(vec_to_kdiag(x, n, k), k)
+        return y
 
     recommendation = optimizer.minimize(oracul)
     answer = oracul(recommendation.value)
