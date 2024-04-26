@@ -5,6 +5,7 @@
 import cvxpy as cp
 import networkx as nx
 import numpy as np
+import nevergrad as ng
 
 from _solvers.backend import (
     AbstractMaxCut, get_partition, get_cut_value
@@ -135,7 +136,7 @@ def kdiag_solver(k, n, steps, L, OPT):
 
     recommendation = optimizer.minimize(oracul)
     answer = oracul(recommendation.value)
-    return answer, vec_to_kdiag(recommendation.value, n, k)
+    return answer  #, vec_to_kdiag(recommendation.value, n, k)
 
 
 class MaxCutSDP(AbstractMaxCut):
