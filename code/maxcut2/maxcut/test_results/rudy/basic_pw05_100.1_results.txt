@@ -1,4 +1,4 @@
 Solved the SDP-relaxed max-cut problem.
 Total weight is 13540.000000
-Value of the cut is 7970.000000
-Solution cuts off 0.588626 share of total weights.
+Value of the cut is 7975.000000
+Solution cuts off 0.588996 share of total weights.
