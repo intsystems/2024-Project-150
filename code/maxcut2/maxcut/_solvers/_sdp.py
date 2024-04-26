@@ -109,7 +109,7 @@ def diag_oracle_solve_real_cut(L, k):
     # print(dp[i])
     #
     # print(best_x)
-    return answer, best_x
+    return best_x
 
 
 def mat_to_kdiag(X, n, k):
