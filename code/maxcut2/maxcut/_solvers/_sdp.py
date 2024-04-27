@@ -151,19 +151,19 @@ def kdiag_solver(k, n, steps, L, OPT):
     #L0 = mat_to_kdiag(np.ones((n, n)), n, k)
     L0 = np.zeros((n, n))
     # dim = (n*(n+1) - (n - (k-1)//2 - 1)*(n - (k-1)//2)) // 2
-    optimizer = OPT(parametrization=ng.p.Array(init=mat_to_kdiag(L, n, k) + L0), budget=steps)
+    optimizer = OPT(parametrization=ng.p.Array(init=kdiag_to_vec(mat_to_kdiag(L, n, k) + L0, n, k)), budget=steps)
 
-    def semidef_kdiag(X):
-        return np.all(np.linalg.eigvals(X - L) >= 0) and np.allclose(X.T, X)
+    def semidef_kdiag(x):
+        return np.all(np.linalg.eigvals(vec_to_kdiag(x, n, k) - L) >= 0)
 
     optimizer.parametrization.register_cheap_constraint(semidef_kdiag)
 
-    def oracul(X):
-        return diag_oracle_solve(X, k)
+    def oracul(x):
+        return diag_oracle_solve(vec_to_kdiag(x, n, k), k)
 
     recommendation = optimizer.minimize(oracul)
     answer = oracul(recommendation.value)
-    return answer, recommendation.value
+    return answer, vec_to_kdiag(recommendation.value, n, k)
 
 
 class MaxCutSDP(AbstractMaxCut):
