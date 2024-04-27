@@ -124,20 +124,20 @@ def mat_to_kdiag(X, n, k):
 
 def vec_to_kdiag(x, n, k):
     assert k % 2 == 1
-    assert len(x) == (n * (n + 1) - (n - (k-1)/2 - 1) * (n - (k-1)/2)) // 2
+    assert len(x) == (n * (n + 1) - (n - (k - 1) / 2 - 1) * (n - (k - 1) / 2)) // 2
     kD = np.diag(x[:n])
     current_index = n
-    for i in range(1, (k+1)//2):  # rows from 1 to k-1 / 2
+    for i in range(1, (k + 1) // 2):  # rows from 1 to k-1 / 2
         for j in range(0, n - i):  # columns from 0 to n-1-i
-            kD[i+j][j] = x[current_index]
-            kD[j][i+j] = x[current_index]
+            kD[i + j][j] = x[current_index]
+            kD[j][i + j] = x[current_index]
             current_index += 1
     return kD
 
 
 def kdiag_to_vec(X, n, k):
     assert k % 2 == 1
-    dim = (n * (n + 1) - (n - (k-1)//2 - 1) * (n - (k-1)//2)) // 2
+    dim = (n * (n + 1) - (n - (k - 1) // 2 - 1) * (n - (k - 1) // 2)) // 2
     x = np.zeros(dim)
     current_index = 0
     for i in range(0, (k + 1) // 2):  # from 1 to k-1 / 2
@@ -149,21 +149,22 @@ def kdiag_to_vec(X, n, k):
 
 def kdiag_solver(k, n, steps, L, OPT):
     #L0 = mat_to_kdiag(np.ones((n, n)), n, k)
-    L0 = np.zeros((n,n))
-    dim = (n * (n + 1) - (n - (k-1)//2 - 1) * (n - (k-1)//2)) // 2
-    optimizer = OPT(parametrization=ng.p.Array(init=kdiag_to_vec(mat_to_kdiag(L, n, k) + L0, n, k)), budget=steps)
+    L0 = np.zeros((n, n))
+    # dim = (n*(n+1) - (n - (k-1)//2 - 1)*(n - (k-1)//2)) // 2
+    optimizer = OPT(parametrization=ng.p.Array(init=mat_to_kdiag(L, n, k) + L0), budget=steps)
 
-    def semidef_kdiag(x):
-        return np.all(np.linalg.eigvals(vec_to_kdiag(x, n, k) - L) >= 0)
+    def semidef_kdiag(X):
+        return np.all(np.linalg.eigvals(X - L) >= 0) and np.allclose(X.T, X)
 
     optimizer.parametrization.register_cheap_constraint(semidef_kdiag)
 
-    def oracul(x):
-        return diag_oracle_solve(vec_to_kdiag(x, n, k), k)
+    def oracul(X):
+        return diag_oracle_solve(X, k)
 
     recommendation = optimizer.minimize(oracul)
     answer = oracul(recommendation.value)
-    return answer, vec_to_kdiag(recommendation.value, n, k)
+    return answer, recommendation.value
+
 
 class MaxCutSDP(AbstractMaxCut):
     """Semi-Definite Programming based solver for the Max-Cut problem.
