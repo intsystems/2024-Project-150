@@ -12,6 +12,10 @@ from _solvers.backend import (
 )
 
 
+def laplacian(W):
+    return -np.array(W) + np.diag(np.sum(W, axis=1))
+
+
 def get_mask(arr):
     answer = 0
     n = len(arr)
@@ -22,7 +26,9 @@ def get_mask(arr):
     return answer
 
 
+# dynamic programming to calculate maxcut in graph with k-diagonal laplacian
 def diag_oracle_solve(L, k):
+    L = L.copy()
     n = L.shape[0]
     depend_number = k // 2 + 1
     dp = [[0] * (2 ** depend_number) for i in range(n)]
@@ -51,6 +57,7 @@ def diag_oracle_solve(L, k):
     return answer
 
 
+# dynamic programming to calculate maxcut in graph with k-diagonal laplacian and store the actual cut
 def diag_oracle_solve_real_cut(L, k):
     n = L.shape[0]
     # print(n)
@@ -112,7 +119,10 @@ def diag_oracle_solve_real_cut(L, k):
     return best_x
 
 
-def mat_to_kdiag(X, n, k):
+# remains only k diagonals of matrix X
+def mat_to_kdiag(X, k):
+    X = X.copy()
+    n = X.shape[0]
     assert k % 2 == 1
     kD = X
     for i in range(n):
@@ -122,7 +132,9 @@ def mat_to_kdiag(X, n, k):
     return kD
 
 
+# converts vector to k-diagonal matrix (extracts first n elements to main diagonal, then (n-1) to second diagonal etc., and symmetry over main diagonal)
 def vec_to_kdiag(x, n, k):
+    x = x.copy()
     assert k % 2 == 1
     assert len(x) == (n * (n + 1) - (n - (k - 1) / 2 - 1) * (n - (k - 1) / 2)) // 2
     kD = np.diag(x[:n])
@@ -135,7 +147,10 @@ def vec_to_kdiag(x, n, k):
     return kD
 
 
-def kdiag_to_vec(X, n, k):
+# converts k-diagonal matrix to vector (main diagonal, then substack second diagonal etc., and symmetry over main diagonal)
+def kdiag_to_vec(X, k):
+    X = X.copy()
+    n = X.shape[0]
     assert k % 2 == 1
     dim = (n * (n + 1) - (n - (k - 1) // 2 - 1) * (n - (k - 1) // 2)) // 2
     x = np.zeros(dim)
@@ -147,11 +162,16 @@ def kdiag_to_vec(X, n, k):
     return x
 
 
-def kdiag_solver(k, n, steps, L, OPT):
-    #L0 = mat_to_kdiag(np.ones((n, n)), n, k)
+def kdiag_solver(k, steps, W, OPT):
+    W = W.copy()
+    n = W.shape[0]
+    L = laplacian(W)
+    # L0 = np.ones((n, n))
     L0 = np.zeros((n, n))
-    # dim = (n*(n+1) - (n - (k-1)//2 - 1)*(n - (k-1)//2)) // 2
-    optimizer = OPT(parametrization=ng.p.Array(init=kdiag_to_vec(mat_to_kdiag(L, n, k) + L0, n, k)), budget=steps)
+    # dim = (n * (n + 1) - (n - (k - 1) // 2 - 1) * (n - (k - 1) // 2)) // 2
+    optimizer = OPT(parametrization=ng.p.Array(init=kdiag_to_vec(mat_to_kdiag(L + L0, k), k)), budget=steps)
+
+    # optimizer = OPT(parametrization=ng.p.Array(shape=(dim, )), budget=steps)
 
     def semidef_kdiag(x):
         return np.all(np.linalg.eigvals(vec_to_kdiag(x, n, k) - L) >= 0)
