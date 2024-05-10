@@ -72,5 +72,5 @@ def get_cut_value(graph, partition):
         attr['weight'] for u, v, attr in graph.edges(data=True)
         if partition[u] != partition[v]
     )
-    total = .5 * nx.adjacency_matrix(graph).sum()
-    return in_cut, total
+    #total = .5 * nx.adjacency_matrix(graph).sum()
+    return in_cut#, total

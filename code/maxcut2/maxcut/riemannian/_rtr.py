@@ -4,8 +4,8 @@
 
 import numpy as np
 
-from maxcut.riemannian import TruncatedConjugateGradient
-from maxcut.riemannian.stiefel import (
+from riemannian import TruncatedConjugateGradient
+from riemannian.stiefel import (
     inner_prod, froebenius, random_from_stiefel, stiefel_dimension,
     stiefel_projection, stiefel_retraction, symblockdiag
 )

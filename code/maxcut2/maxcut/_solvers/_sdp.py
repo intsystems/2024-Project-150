@@ -162,28 +162,118 @@ def kdiag_to_vec(X, k):
     return x
 
 
-def kdiag_solver(k, steps, W, OPT):
+def is_psd(M):
+    return np.min(np.linalg.eigvals(M)) >= 0
+
+
+def nearest_psd_ge_diag_lambda(M, grid):
+    """
+    Finds 'nearest' coefficient k s.t. diagonal matrix (k*I - M) is psd
+    """
+    if len(grid) == 1:
+        return grid[0]
+    if len(grid) == 2:
+        if is_psd(grid[0] * np.eye(M.shape[0]) - M):
+            return grid[0]
+        else:
+            return grid[1]
+    mid = len(grid) // 2
+    if is_psd(grid[mid] * np.eye(M.shape[0]) - M):
+        return nearest_psd_ge_diag_lambda(M, grid[:mid + 1])
+    else:
+        return nearest_psd_ge_diag_lambda(M, grid[mid + 1:])
+
+
+def kdiag_solver(k, W, steps, OPT, init):
     W = W.copy()
     n = W.shape[0]
     L = laplacian(W)
-    # L0 = np.ones((n, n))
-    L0 = np.zeros((n, n))
-    # dim = (n * (n + 1) - (n - (k - 1) // 2 - 1) * (n - (k - 1) // 2)) // 2
-    optimizer = OPT(parametrization=ng.p.Array(init=kdiag_to_vec(mat_to_kdiag(L + L0, k), k)), budget=steps)
+    #L0 = 20 * np.ones((n, n))
+    #L0 = np.zeros((n, n))
+    #dim = (n * (n + 1) - (n - (k - 1) // 2 - 1) * (n - (k - 1) // 2)) // 2
+    #L0 = np.zeros(dim)
+    #print("lamba ", lambd)
+    if init == "eye":
+        lambd = nearest_psd_ge_diag_lambda(L, np.linspace(1, 1000, 10000))
+        # print('lambda:', lambd)
+        optimizer = OPT(parametrization=ng.p.Array(init=lambd * np.eye(n)), budget=steps)
+        # optimizer = OPT(parametrization=ng.p.Array(init=kdiag_to_vec(lambd * np.eye(n), k)), budget=steps)
+    else:
+        #optimizer = OPT(parametrization=ng.p.Array(init=mat_to_kdiag(nearest_psd(mat_to_kdiag(dual_solver(W)[1], k) - L) + L, k)), budget=steps)
+        optimizer = OPT(parametrization=ng.p.Array(init=1.01 * mat_to_kdiag(dual_solver(W)[1], k)), budget=steps)
+        # optimizer = OPT(parametrization=ng.p.Array(init=2*kdiag_to_vec(dual_solver(W)[1], k)), budget=steps)
 
-    # optimizer = OPT(parametrization=ng.p.Array(shape=(dim, )), budget=steps)
+    #else:
+    # optimizer = OPT(parametrization=ng.p.Array(init=kdiag_to_vec(nearest_psd(np.eye(n) + L), k)), budget=steps)
 
     def semidef_kdiag(x):
-        return np.all(np.linalg.eigvals(vec_to_kdiag(x, n, k) - L) >= 0)
+        return is_psd(mat_to_kdiag(x, k) - L)
+        #return is_psd(vec_to_kdiag(x, n, k) - L)
 
     optimizer.parametrization.register_cheap_constraint(semidef_kdiag)
 
     def oracul(x):
-        return diag_oracle_solve(vec_to_kdiag(x, n, k), k)
+        return diag_oracle_solve(mat_to_kdiag(x, k), k)
+        #return diag_oracle_solve(vec_to_kdiag(x, n, k), k)
 
     recommendation = optimizer.minimize(oracul)
     answer = oracul(recommendation.value)
-    return answer, vec_to_kdiag(recommendation.value, n, k)
+
+    # x is vector of cut (consists of +1 and -1)
+    x = diag_oracle_solve_real_cut(mat_to_kdiag(recommendation.value, k), k=k)
+    #x = diag_oracle_solve_real_cut(vec_to_kdiag(recommendation.value, n, k), k=k)
+    x = 2 * np.array(x) - np.ones(len(x))
+
+    # truecut is actual value of cut corresponding to vector x in graph W
+    truecut = round(0.25 * x.T @ laplacian(W) @ x)
+
+    return 0.25 * answer, truecut
+    # print("D%0.f solver optimal value is " % k, round(0.25 * answer))
+    # print("D%0.f solution is" % k, recommendation.value)
+
+
+def sdp_solver(W):
+    W = W.copy()
+    n = W.shape[0]
+    X = cp.Variable((n, n), symmetric=True)
+    constraints = [X >> 0]
+    constraints += [X[i][i] == 1 for i in range(n)]
+    objective = cp.Maximize(cp.sum(cp.multiply(W, (1 - X))))
+    prob = cp.Problem(objective, constraints)
+    prob.solve()
+    return 0.25 * prob.value, X.value
+    #return round(0.25 * prob.value), X.value
+    #print("SDP solver optimal value is ", round(0.25 * prob.value))
+    #print("SDP solution is", X.value)
+
+
+def dual_solver(W):
+    W = W.copy()
+    n = W.shape[0]
+    L = laplacian(W)
+    X = cp.Variable((n, n), diag=True)
+    constraints = [X >> L]
+    objective = cp.Minimize(cp.trace(X))
+    prob = cp.Problem(objective, constraints)
+    prob.solve()
+    return 0.25 * prob.value, X.value.toarray()
+    #return round(0.25 * prob.value), X.value
+    #print("Dual solver optimal value is ", round(0.25 * prob.value))
+    #print("Dual solution is ", X.value)
+
+
+def real_solve(matrix, graph):
+    max_value = -1
+    matrix = nearest_psd(matrix)
+    # Get the cut defined by the matrix.
+    vectors = np.linalg.cholesky(matrix)
+    for i in range(500):
+        cut = get_partition(vectors)
+        # Get the value of the cut. Store results.
+        value = get_cut_value(graph, cut)
+        if value > max_value:
+            max_value = value
+    return max_value
 
 
 class MaxCutSDP(AbstractMaxCut):
@@ -338,12 +428,3 @@ def nearest_psd(matrix):
         matrix += identity * (- min_eig * (k ** 2) + spacing)
         k += 1
     return matrix
-
-
-def is_psd(matrix):
-    """Check whether a given matrix is PSD to numpy."""
-    try:
-        _ = np.linalg.cholesky(matrix)
-        return True
-    except np.linalg.LinAlgError:
-        return False

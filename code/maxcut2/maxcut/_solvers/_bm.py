@@ -5,8 +5,8 @@
 import networkx as nx
 import numpy as np
 
-from maxcut.riemannian import RiemannianTrustRegion
-from maxcut._solvers.backend import (
+from riemannian import RiemannianTrustRegion
+from _solvers.backend import (
     AbstractMaxCut, get_partition, get_cut_value
 )
 

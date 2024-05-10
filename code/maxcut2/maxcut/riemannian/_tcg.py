@@ -4,7 +4,7 @@
 
 import numpy as np
 
-from maxcut.riemannian.stiefel import inner_prod, froebenius
+from riemannian.stiefel import inner_prod, froebenius
 
 
 class TruncatedConjugateGradient:
