@@ -196,40 +196,48 @@ def kdiag_solver(k, W, steps, OPT, init):
     if init == "eye":
         lambd = nearest_psd_ge_diag_lambda(L, np.linspace(1, 1000, 10000))
         # print('lambda:', lambd)
-        optimizer = OPT(parametrization=ng.p.Array(init=lambd * np.eye(n)), budget=steps)
-        # optimizer = OPT(parametrization=ng.p.Array(init=kdiag_to_vec(lambd * np.eye(n), k)), budget=steps)
+        # optimizer = OPT(parametrization=ng.p.Array(init=lambd * np.eye(n)), budget=steps)
+        optimizer = OPT(parametrization=ng.p.Array(init=kdiag_to_vec(lambd * np.eye(n), k)), budget=steps)
     else:
-        #optimizer = OPT(parametrization=ng.p.Array(init=mat_to_kdiag(nearest_psd(mat_to_kdiag(dual_solver(W)[1], k) - L) + L, k)), budget=steps)
-        optimizer = OPT(parametrization=ng.p.Array(init=1.01 * mat_to_kdiag(dual_solver(W)[1], k)), budget=steps)
-        # optimizer = OPT(parametrization=ng.p.Array(init=2*kdiag_to_vec(dual_solver(W)[1], k)), budget=steps)
+        # optimizer = OPT(parametrization=ng.p.Array(init=mat_to_kdiag(nearest_psd(mat_to_kdiag(dual_solver(W)[1], k) - L) + L, k)), budget=steps)
+        # optimizer = OPT(parametrization=ng.p.Array(init=1.01 * mat_to_kdiag(dual_solver(W)[1], k)), budget=steps)
+        print('NOW:', is_psd(dual_solve_eps(W)[1] - L))
+        optimizer = OPT(parametrization=ng.p.Array(init=1.1*kdiag_to_vec(dual_solve_eps(W)[1], k)), budget=steps)
+
+        # X : X - L >= 0 X - k-diag
+        # Dual solver returns optimal diag matrix: diag - L >= 0
+        # init = 2 * diag
 
     #else:
     # optimizer = OPT(parametrization=ng.p.Array(init=kdiag_to_vec(nearest_psd(np.eye(n) + L), k)), budget=steps)
 
     def semidef_kdiag(x):
-        return is_psd(mat_to_kdiag(x, k) - L)
-        #return is_psd(vec_to_kdiag(x, n, k) - L)
+        # return is_psd(mat_to_kdiag(x, k) - L)
+        return is_psd(vec_to_kdiag(x, n, k) - L)
 
     optimizer.parametrization.register_cheap_constraint(semidef_kdiag)
 
     def oracul(x):
-        return diag_oracle_solve(mat_to_kdiag(x, k), k)
-        #return diag_oracle_solve(vec_to_kdiag(x, n, k), k)
+        # return diag_oracle_solve(mat_to_kdiag(x, k), k)
+        return diag_oracle_solve(vec_to_kdiag(x, n, k), k)
 
     recommendation = optimizer.minimize(oracul)
     answer = oracul(recommendation.value)
 
+    return 0.25 * answer, vec_to_kdiag(recommendation.value, n, k) # mat_to_kdiag(recommendation.value, k)
+    # print("D%0.f solver optimal value is " % k, round(0.25 * answer))
+    # print("D%0.f solution is" % k, recommendation.value)
+
+
+def dynamic_cut(matrix, W, k):
     # x is vector of cut (consists of +1 and -1)
-    x = diag_oracle_solve_real_cut(mat_to_kdiag(recommendation.value, k), k=k)
+    x = diag_oracle_solve_real_cut(matrix, k=k)
     #x = diag_oracle_solve_real_cut(vec_to_kdiag(recommendation.value, n, k), k=k)
     x = 2 * np.array(x) - np.ones(len(x))
 
     # truecut is actual value of cut corresponding to vector x in graph W
     truecut = round(0.25 * x.T @ laplacian(W) @ x)
-
-    return 0.25 * answer, truecut
-    # print("D%0.f solver optimal value is " % k, round(0.25 * answer))
-    # print("D%0.f solution is" % k, recommendation.value)
+    return truecut
 
 
 def sdp_solver(W):
@@ -262,7 +270,24 @@ def dual_solver(W):
     #print("Dual solution is ", X.value)
 
 
-def real_solve(matrix, graph):
+def dual_solve_eps(W):
+    W = W.copy()
+    n = W.shape[0]
+    L = laplacian(W)
+    X = cp.Variable((n, n), symmetric=True)
+    eps = np.diag([0.0001] * n)
+    constraints = [X >> (L + eps)]
+    for i in range(n):
+        for j in range(n):
+            if i != j:
+                constraints.append(X[i][j] == 0)
+    func = cp.Minimize(cp.trace(X))
+    prob = cp.Problem(func, constraints)
+    prob.solve()
+    return 0.25 * prob.value, X.value
+
+
+def cholesky_cut(matrix, graph):
     max_value = -1
     matrix = nearest_psd(matrix)
     # Get the cut defined by the matrix.

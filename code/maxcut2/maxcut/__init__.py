@@ -9,7 +9,7 @@ import nevergrad as ng
 from _solvers import MaxCutBM, MaxCutSDP
 from _graphs import load_gset_graph, generate_sbm
 from _solvers._sdp import kdiag_solver, diag_oracle_solve_real_cut, laplacian, mat_to_kdiag, sdp_solver, dual_solver, \
-    kdiag_to_vec, real_solve
+    kdiag_to_vec, cholesky_cut, dynamic_cut, dual_solve_eps
 import warnings
 
 warnings.filterwarnings('ignore')
@@ -28,7 +28,7 @@ names = ['g05_60', 'g05_80', 'g05_100', 'pm1d_80', 'pm1s_100', 'pw01_100', 'pw05
 k = 7
 
 # optimizer
-OPTs = [ng.optimizers.ChainMetaModelSQP]  #, ng.optimizers.ChainNaiveTBPSACMAPowel, ng.optimizers.CMAsmall, ng.optimizers.CMApara, TwoPointsDE]
+OPTs = [ng.optimizers.ChainNaiveTBPSACMAPowell]  # ng.optimizers.ChainMetaModelSQP, ng.optimizers.ChainNaiveTBPSACMAPowell, ng.optimizers.CMAsmall, ng.optimizers.CMApara, TwoPointsDE]
 
 my_str = "_________________|__________________|________________"
 for optimizer in OPTs:
@@ -44,16 +44,22 @@ for optimizer in OPTs:
 
             # print("SDP solver optimal value is ", round(sdp_solver(W)))
             ans, mat = sdp_solver(W)
-            print("SDP solver\t\t |\t Ans:", np.round(ans, 3), "  |\tTruecut:", real_solve(matrix=mat, graph=graph))
+            print("SDP cholesky \t |\t Ans:", np.round(ans, 3), "  |\tTruecut:", cholesky_cut(matrix=mat, graph=graph))
             print(my_str)
-            ans, mat = dual_solver(W)
-            print("Dual solver \t |\t Ans:", np.round(ans, 3), "  |\tTruecut:", real_solve(matrix=mat, graph=graph))
+            ans, mat = dual_solve_eps(W)
+            print("Dual cholesky \t |\t Ans:", np.round(ans, 3), "  |\tTruecut:", cholesky_cut(matrix=mat, graph=graph))
             print(my_str)
-            ans, true = kdiag_solver(k, W, steps=100, OPT=optimizer, init='eye')
-            print("D%0.f solver(eye)   |\t Ans:" % k, np.round(ans, 3), "  |\tTruecut:", true)
+            print("Dual dynamic \t |\t Ans:", np.round(ans, 3), "  |\tTruecut:", dynamic_cut(matrix=mat, W=W, k=1))
             print(my_str)
-            ans, true = kdiag_solver(k, W, steps=100, OPT=optimizer, init='dual')
-            print("D%0.f solver(dual)  |\t Ans:" % k, np.round(ans, 3), "  |\tTruecut:", true)
+            ans, mat = kdiag_solver(k, W, steps=100, OPT=optimizer, init='eye')
+            print("D%0.f (eye)cholesky |\t Ans:" % k, np.round(ans, 3), "  |\tTruecut:", cholesky_cut(matrix=mat, graph=graph))
+            print(my_str)
+            print("D%0.f (eye)dynamic  |\t Ans:" % k, np.round(ans, 3), "  |\tTruecut:", dynamic_cut(matrix=mat, W=W, k=k))
+            print(my_str)
+            ans, mat = kdiag_solver(k, W, steps=100, OPT=optimizer, init='dual')
+            print("D%0.f (dual)cholesky|\t Ans:" % k, np.round(ans, 3), " |\tTruecut:", cholesky_cut(matrix=mat, graph=graph))
+            print(my_str)
+            print("D%0.f (dual)dynamic |\t Ans:" % k, np.round(ans, 3), " |\tTruecut:", dynamic_cut(matrix=mat, W=W, k=k))
             print(my_str)
             print('\n')
 
