@@ -29,7 +29,11 @@ k = 7
 
 # optimizer
 OPTs = [ng.optimizers.ChainNaiveTBPSACMAPowell]  # ng.optimizers.ChainMetaModelSQP, ng.optimizers.ChainNaiveTBPSACMAPowell, ng.optimizers.CMAsmall, ng.optimizers.CMApara, TwoPointsDE]
-
+graph = load_gset_graph(f"tests/rudy/my38.0")
+W = np.array(nx.adjacency_matrix(graph).toarray())
+L = laplacian(W)
+print(dynamic_cut(matrix=L, W=W, k=5))
+# print(dynamic_cut())
 my_str = "_________________|__________________|________________"
 for optimizer in OPTs:
     print(str(optimizer))
@@ -52,7 +56,7 @@ for optimizer in OPTs:
             print("Dual dynamic \t |\t Ans:", np.round(ans, 3), "  |\tTruecut:", dynamic_cut(matrix=mat, W=W, k=1))
             print(my_str)
             ans, mat = kdiag_solver(k, W, steps=100, OPT=optimizer, init='eye')
-            print("D%0.f (eye)cholesky |\t Ans:" % k, np.round(ans, 3), "  |\tTruecut:", cholesky_cut(matrix=mat, graph=graph))
+            # print("D%0.f (eye)cholesky |\t Ans:" % k, np.round(ans, 3), "  |\tTruecut:", cholesky_cut(matrix=mat, graph=graph))
             print(my_str)
             print("D%0.f (eye)dynamic  |\t Ans:" % k, np.round(ans, 3), "  |\tTruecut:", dynamic_cut(matrix=mat, W=W, k=k))
             print(my_str)

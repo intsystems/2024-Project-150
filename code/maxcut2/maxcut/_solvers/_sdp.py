@@ -21,6 +21,7 @@ def get_mask(arr):
     n = len(arr)
     power_of_2 = 1
     for i in range(n):
+        arr[i] = max(arr[i], 0)
         answer += arr[i] * power_of_2
         power_of_2 *= 2
     return answer
@@ -37,19 +38,19 @@ def diag_oracle_solve(L, k):
             c = [0] * depend_number
             copy_mask = mask
             for bit in range(depend_number):
-                c[bit] = copy_mask % 2
+                c[bit] = (copy_mask % 2) * 2 - 1
                 copy_mask //= 2
             best_current_ans = 0
-            c_previous_0 = c[1:]
+            c_previous_minus_1 = c[1:]
             c_previous_1 = c[1:]
-            c_previous_0.append(0)
+            c_previous_minus_1.append(-1)
             c_previous_1.append(1)
             for j in range(max(0, i - (k // 2)), i + 1):
                 # print(i, j)
-                best_current_ans += 2 * (c[0] * 2 - 1) * (c[i - j] * 2 - 1) * L[i][j]
+                best_current_ans += 2 * c[0] * c[i - j] * L[i][j]
             best_current_ans -= L[i][i]
             if i > 0:
-                best_current_ans += max(dp[i - 1][get_mask(c_previous_0)], dp[i - 1][get_mask(c_previous_1)])
+                best_current_ans += max(dp[i - 1][get_mask(c_previous_minus_1)], dp[i - 1][get_mask(c_previous_1)])
             dp[i][mask] = best_current_ans
     answer = 0
     for mask in range(2 ** depend_number):
@@ -59,32 +60,29 @@ def diag_oracle_solve(L, k):
 
 # dynamic programming to calculate maxcut in graph with k-diagonal laplacian and store the actual cut
 def diag_oracle_solve_real_cut(L, k):
+    L = L.copy()
     n = L.shape[0]
-    # print(n)
     depend_number = k // 2 + 1
-    depend_number = min(depend_number, n)
     dp = [[0] * (2 ** depend_number) for i in range(n)]
     for i in range(n):
         for mask in range(2 ** depend_number):
             c = [0] * depend_number
             copy_mask = mask
             for bit in range(depend_number):
-                c[bit] = copy_mask % 2
+                c[bit] = (copy_mask % 2) * 2 - 1
                 copy_mask //= 2
             best_current_ans = 0
-            c_previous_0 = c[1:]
+            c_previous_minus_1 = c[1:]
             c_previous_1 = c[1:]
-            c_previous_0.append(0)
+            c_previous_minus_1.append(-1)
             c_previous_1.append(1)
-            # print(c, c_previous_0, c_previous_1)
             for j in range(max(0, i - (k // 2)), i + 1):
                 # print(i, j)
-                best_current_ans += 2 * (c[0] * 2 - 1) * (c[i - j] * 2 - 1) * L[i][j]
+                best_current_ans += 2 * c[0] * c[i - j] * L[i][j]
             best_current_ans -= L[i][i]
             if i > 0:
-                best_current_ans += max(dp[i - 1][get_mask(c_previous_0)], dp[i - 1][get_mask(c_previous_1)])
+                best_current_ans += max(dp[i - 1][get_mask(c_previous_minus_1)], dp[i - 1][get_mask(c_previous_1)])
             dp[i][mask] = best_current_ans
-        # print('dp', dp[i])
     best_x = []
     final_mask = 0
     answer = 0
@@ -96,26 +94,22 @@ def diag_oracle_solve_real_cut(L, k):
     c = [0] * depend_number
     copy_mask = final_mask
     for bit in range(depend_number):
-        c[bit] = copy_mask % 2
+        c[bit] = (copy_mask % 2) * 2 - 1
         copy_mask //= 2
     best_x = c.copy()
     # print(best_x)
     for i in range(n - 2, depend_number - 2, -1):
-        c_previous_0 = c[1:]
+        c_previous_minus_1 = c[1:]
         c_previous_1 = c[1:]
-        c_previous_0.append(0)
+        c_previous_minus_1.append(-1)
         c_previous_1.append(1)
-        if dp[i][get_mask(c_previous_0)] > dp[i][get_mask(c_previous_1)]:
-            c = c_previous_0
-            best_x.append(0)
+        if dp[i][get_mask(c_previous_minus_1)] > dp[i][get_mask(c_previous_1)]:
+            c = c_previous_minus_1
+            best_x.append(-1)
         else:
             c = c_previous_1
             best_x.append(1)
     best_x = best_x[::-1]
-    # print(answer / 4)
-    # print(dp[i])
-    #
-    # print(best_x)
     return best_x
 
 
@@ -202,7 +196,7 @@ def kdiag_solver(k, W, steps, OPT, init):
         # optimizer = OPT(parametrization=ng.p.Array(init=mat_to_kdiag(nearest_psd(mat_to_kdiag(dual_solver(W)[1], k) - L) + L, k)), budget=steps)
         # optimizer = OPT(parametrization=ng.p.Array(init=1.01 * mat_to_kdiag(dual_solver(W)[1], k)), budget=steps)
         print('NOW:', is_psd(dual_solve_eps(W)[1] - L))
-        optimizer = OPT(parametrization=ng.p.Array(init=1.1*kdiag_to_vec(dual_solve_eps(W)[1], k)), budget=steps)
+        optimizer = OPT(parametrization=ng.p.Array(init=2*kdiag_to_vec(dual_solve_eps(W)[1], k)), budget=steps)
 
         # X : X - L >= 0 X - k-diag
         # Dual solver returns optimal diag matrix: diag - L >= 0
@@ -231,9 +225,9 @@ def kdiag_solver(k, W, steps, OPT, init):
 
 def dynamic_cut(matrix, W, k):
     # x is vector of cut (consists of +1 and -1)
-    x = diag_oracle_solve_real_cut(matrix, k=k)
+    x = np.array(diag_oracle_solve_real_cut(matrix, k=k))
     #x = diag_oracle_solve_real_cut(vec_to_kdiag(recommendation.value, n, k), k=k)
-    x = 2 * np.array(x) - np.ones(len(x))
+    # x = 2 * np.array(x) - np.ones(len(x))
 
     # truecut is actual value of cut corresponding to vector x in graph W
     truecut = round(0.25 * x.T @ laplacian(W) @ x)
