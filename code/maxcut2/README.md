@@ -1,4 +1,6 @@
 # maxcut: Max-Cut problem solving tools following a variety of approaches
+For the basic solution we use Paul Andrey's repository and add there other methods for solving MaxCut via k-diagonal optimization and Dual approach. 
+
 
 Implementation realized in the context of scholar project on the max-cut
 problem.
