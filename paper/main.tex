@@ -1,22 +1,61 @@
 \documentclass{article}
+\input{setup/preamble}
+
 \usepackage{arxiv}
 \usepackage[utf8]{inputenc}
-\usepackage[english, russian]{babel}
+% \usepackage[english, russian]{babel}
 \usepackage[T1]{fontenc}
 \usepackage{url}
 \usepackage{booktabs}
 \usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsmath}
 \usepackage{nicefrac}
 \usepackage{microtype}
 \usepackage{lipsum}
 \usepackage{graphicx}
 \usepackage{natbib}
+\usepackage{amsthm}
+
 \usepackage{doi}
+\usepackage{xcolor}
 \usepackage{amsmath}
-
+% \newtheorem{theorem}{Theorem}[section]
+% \newtheorem{corollary}{Corollary}[theorem]
+% \newtheorem{lemma}[theorem]{Lemma}
+% \newtheorem{lemma}[theorem]{Lemma}
+\usepackage{subfigure}
 \DeclareMathOperator{\tr}{Tr}
+\DeclareMathOperator{\mc}{\texttt{Max-Cut}}
+\DeclareMathOperator{\sdp}{\texttt{SDP}}
 
 
+\newcommand{\set}[1]{\left\{#1\right\}}
+\renewcommand{\empty}{\varnothing}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\x}{\mathbf{x}}
+\renewcommand{\v}{\mathbf{v}}
+\newcommand{\MaxCut}{\mathbf{MaxCut}}
+\newcommand{\SDP}{\mathbf{SDP}}
+\newcommand{\Dual}{\mathbf{Dual}}
+\renewcommand{\qed}{\hfill\blacksquare}
+
+\renewcommand{\le}{\ \leqslant\ }
+\renewcommand{\ge}{\ \geqslant\ }
+\newcommand{\psd}{\succcurlyeq}
+
+% brackets
+\renewcommand{\l}{\left}
+\renewcommand{\r}{\right}
+\newcommand{\la}{\left\langle}
+\newcommand{\ra}{\right\rangle}
+\newcommand{\lr}[1]{\left(#1\right)}
+\newcommand{\lrsq}[1]{\left[#1\right]}
+\newcommand{\lara}[1]{\left\langle#1\right\rangle}
+
+
+\usepackage{graphicx}
+\usepackage{subfig}
 
 \author{ Sergei Anikin \\
 	Chair of Data Analysis\\
@@ -51,7 +90,7 @@ pdfkeywords={First keyword, Second keyword, More},
 }
 \maketitle
 \begin{abstract}
-	This paper addresses the well-known Max Cut problem, which has various applications both in machine learning and theoretical physics. The Max Cut problem is computationally intractable over general graphs. This paper presents a novel empirical approach aimed at enhancing the quality of Max-Cut approximations within polynomial time bounds. While the problem is tractable for graphs with small tree-width, its solution over general graphs often relies on Semi-Definite Programming or Lovász-Schrijver relaxations. We achieve the described improvement of approximation quality by combining relaxation approaches, the tree-width ideas and various heuristics described in the paper.
+	This paper addresses the well-known Max Cut problem, which has various applications both in machine learning and theoretical physics. The Max Cut problem is computationally NP-hard over general graphs. This paper presents a novel empirical approach aimed at enhancing the quality of Max-Cut approximations within polynomial time bounds. While the problem is tractable for graphs with small tree-width, its solution over general graphs often relies on Semi-Definite Programming or Lovász-Schrijver relaxations. We achieve the described improvement of approximation quality by combining relaxation approaches, the tree-width ideas and various heuristics described in the paper.
 
 
 
@@ -62,10 +101,11 @@ pdfkeywords={First keyword, Second keyword, More},
 \keywords{SDP \and Treewidth \and Max Cut \and Lovász-Schrijver relaxations}
 
 \section{Introduction}
-In this paper, we will discuss a non-asymptotic improvement of the solution to the MAX CUT problem - the problem of finding the maximum cut in  undirected graphs. It involves partitioning the vertices of a graph into two sets such that the number of edges between the two sets (the cut) is maximized. This problem has applications in many spheres, including machine learning, theoretical physics, and theoretical computer science. It serves as a basis for developing approximation algorithms and heuristic methods for solving other optimization problems. Currently, for graphs in general, the best solutions proposed by X. Goemans and David P. Williamson find a cut that contains at least 0.878… of the edges in the optimal cut [link]. There are families of graphs for which this bound is asymptotically optimal unless P = NP.
+
+In this paper, we will discuss a non-asymptotic improvement of the solution to the MAX CUT problem $-$ the problem of finding the maximum cut in  undirected graphs. It involves partitioning the vertices of a graph into two sets such that the number of edges between the two sets (the cut) is maximized. This problem has applications in many spheres, including machine learning, theoretical physics, and theoretical computer science. It serves as a basis for developing approximation algorithms and heuristic methods for solving other optimization problems. Currently, for graphs in general, the best solutions proposed by X. Goemans and David P. Williamson find a cut that contains at least approximately $88\%$ of total weight of the edges in the optimal cut [1]. There are families of graphs for which this bound is asymptotically optimal unless Unique games conjecture is false [16].
 \\
 \\
-In this article, we focus on a non-asymptotic improvement of the solution in polynomial time on arbitrary graphs. The known solution utilizes Semi-Definite Programming problems, and here, we present reasoning that allows solving them with greater accuracy by combining optimization ideas, tree-width approach, and heuristics.
+In this article, we focus on a non-asymptotic improvement of the solution in polynomial time on arbitrary graphs. The known solution [1] utilizes Semi-Definite Programming problems, and here, we present reasoning that allows solving them with greater accuracy by combining optimization ideas, tree-width approach, and heuristics. We decide on the efficiency of provided algorithm by comparing it with well-known ones using the different datasets[10 - 13].
 
 
 \section{Problem statement}
@@ -77,25 +117,30 @@ $$W(S) = \sum_{i \in S} \sum_{j \notin S} w_{ij}$$
 
 % Our goal is to find in polynomial time cut $S_{found} \subseteq V$, such that the value $ratio$ is as big as possible $$ratio = \frac{W(S_{found})}{\max_{S \subseteq V}{W(S)}} \rightarrow \max$$ 
 
-Our goal is to find in polynomial time cut $S_{found} \subseteq V$, such that the value $W(S_{found}$ is as big as possible $$W(S_{found})_{\substack{S_{found} \subseteq V}} \rightarrow \max$$ 
+Our goal is to find in polynomial time cut $S_{found} \subseteq V$, such that the value $W(S_{found})$ is as big as possible \[W(S_{found})\rightarrow \max_{\substack{S_{found}}}\]
 
-We decide on the efficiency of provided algorithm by comparing it with well-known ones using the different datasets [10 - 13]
+We decide on the efficiency of provided algorithm by comparing it with well-known ones using the different datasets [10 - 13].
 \section{Theory}
 We find the approximate solution using SDP solution. First of all, we show, how SDP problem is connected to Max Cut. Let matrix L be L = \begin{bmatrix}
-    (\sum_{i = 1}^n w_{1i}) - w_{11} & -w_{12} & -w_{13} & \dots  & -w_{1n} \\
-    -w_{21} & (\sum_{i = 1}^n w_{2i}) - w_{11} & -w_{23} & \dots  & -w_{2n} \\
+    (\sum_{i = 1}^n w_{1i}) & -w_{12} & -w_{13} & \dots  & -w_{1n} \\
+    -w_{21} & (\sum_{i = 1}^n w_{2i}) & -w_{23} & \dots  & -w_{2n} \\
     \vdots & \vdots & \vdots & \ddots & \vdots \\
-    -w_{n1} & -w_{n2} & -w_{n3} & \dots  & (\sum_{i = 1}^n w_{ni}) - w_{nn}
-\end{bmatrix}
+    -w_{n1} & -w_{n2} & -w_{n3} & \dots  & (\sum_{i = 1}^n w_{ni})
+\end{bmatrix} 
+\\
+Later we call such matrix the Laplacian of the graph. 
+\\
 Then we state that $W(S) = \frac{1}{4} x\top L x$, where $x_{i} = 1$ if $x \in S$ and $x_{i} = -1$ if $x \in T$. It is easy to see: the coefficient before each variable $w_{ij}$  $1$ in both sides of equality equals to 1 if $i$ and $j$ are from parts of partition and equals to 0 otherwise.
 
 
 It means that our task is equivalent to finding $$OPT = \max_{\substack{x_i^2 = 1}} x^T L x$$ since $$\max_{\substack{S \subseteq V}} W(S) = \frac{1}{4} \max_{\substack{x_i^2 = 1}} x^T L x$$
 % Since it is known, that the problem of finding optimal solution is NP-hard, we relax this problem for another one by forgetting about the rank condition. We will call the relaxed problem SDP.
 
-Let's look at the dual problem for OPT. We will also call SDP a problem relaxed by forgetting about the rank condition.$$OPT = \max_{\substack{x_i^2 = 1}} x^T L x = \max_{\substack{x_i^2 = 1 \\ X = x^T x}} \Tr{LX} = \max_{\substack{X \succeq 0 \\ diag(X) = 1_n \\ rank(X) = 1}} \tr (L X) \leq \max_{\substack{X \succeq 0 \\ diag(X) = 1_n}} \tr (L X) = SDP$$
+Let's look at the dual problem for OPT. We will also call SDP a problem relaxed by forgetting about the rank condition.
 
-Let's find the dual for SDP problem. 
+$$OPT = \max_{\substack{x_i^2 = 1}} x^T L x = \max_{\substack{x_i^2 = 1 \\ X = x^T x}} \Tr{LX} = \max_{\substack{X \succeq 0 \\ diag(X) = 1_n \\ rank(X) = 1}} \tr (L X) \leq \max_{\substack{X \succeq 0 \\ diag(X) = 1_n}} \tr (L X)$$
+
+Let's find the dual for OPT problem. 
 $$Dual = \max_{\substack{\lambda}} \min_{\substack{x}} \sum_{i=1}^n{\lambda_i (1  - x_{i}^2)} - \sum_{i, j}^n{x_{i}x_{j} L_{ij}} = \max_{\substack{\lambda}} \min_{\substack{x}} \sum_{i=1}^n{\lambda_i} - \sum_{i, j}^n{x_{i}x_{j} L_{ij}} - \sum_{i=1}^n{\lambda_i x_{i}^2}$$
 
 if $-L - Diag(\lambda) \not \succeq 0$ then $$\min_{\substack{x}}  \sum_{i=1}^n{\lambda_i} - \sum_{i, j}^n{x_{i}x_{j} L_{ij}} - \sum_{i=1}^n{\lambda_i x_{i}^2} = -\infty$$ since we can multiply the vector, which proves that $-L - Diag(\lambda) \not \succeq 0$, by constant and get the arbitrary small value. 
@@ -108,10 +153,60 @@ This means that if we denote $\xi_i := -\lambda_i$, Dual problem can be rewritte
 Later we will try to approximate Dual value using tree-width ideas, but first of all let's prove the following Lemma.
 
 
-\textbf{Lemma} 
-$$Dual  =  \min_{\substack{\xi: \\  Diag(\xi) \succeq L}} \sum_{i=1}^n{\xi_i} = \min_{\substack{L_T \succeq L}} \max_{\substack{x: x_i^2 = 1}} x^T L_T x = TreeRel$$ where $L_T$ can be represented as $L_T = L_{tree} + Diagonal$, where $L_{tree}$ corresponds to Laplacian of a tree graph and Diag is a diagonal matrix with not negative values.
+\begin{lemma} 
+$$Dual  =  \min_{\substack{\xi: \\  Diag(\xi) \succeq L}} \sum_{i=1}^n{\xi_i} = \min_{\substack{L_T \succeq L}} \max_{\substack{x: x_i^2 = 1}} x^T L_T x = TreeRel$$ where $L_T$ can be represented as $L_T = L_{tree} + Diagonal$, where $L_{tree}$ corresponds to Laplacian of a tree graph and Diag is a diagonal matrix with non-negative values.
+\end{lemma}
 
-Proof. It is well-known, that tree is a bipartite graph and hence the MaxCut value equals to the total sum of edges in the graph $$\max_{\substack{x: x_i^2 = 1}} x^T L_{tree} x = 4 \sum_{i} \sum_{j > i} w_{ij}$$
+% {\color{blue}
+% \begin{itemize}
+%     \item Diagonal (1) => Tree (2) => More complex graphs. 
+%     \begin{itemize}
+%         \item Diagonal = Tree
+%         \item Tree (2) => More complex graphs -- put on hold. 
+%     \end{itemize}
+%     \item Diagonal (3) => k-diagonal. 
+%     \begin{itemize}
+%         \item 1-diagonal = Diagonal. 1-diagonal optimum is D*
+%         \item Refer the optimum of the SDP (dual) as SDP.
+%         \item 3, 5, 7 etc diagonal matrices. Consider $D + L_3$, where $D$ -- Diagonal, $L_3$ -- 3 diagonal Laplacian. Assume:
+%         \[
+%             D + L_3 \succeq L
+%         \]
+%         Than, we claim: 
+%         \[SDP = \tr(D*) \ge \tr(D) + \mc(L_3) \ge \mc(L),\]
+%         with $D^* \succeq D + L_3 \succeq L$ that is $D^* - D \succeq L_3$. 
+%     \end{itemize}
+% \end{itemize}
+
+
+% }
+
+
+% {\color{red} Consider 3 diagonal case, $L_3 \succeq L$,
+% \begin{align*}
+%     F(x_1, x_2, \dots, x_n) = & \max\limits_{x: x_i^2 = 1} x^\top L_3 x = \max\limits_{x_1, \dots, x_n = \pm 1} 
+%     \left(F(x_2, x_3, \dots, x_n) + \sum_{j\neq 1} \omega_{1j} x_1 x_j\right) = \\
+%     & \max\limits_{x_1, x_2, x_3 = \pm 1} 
+%     \left(F(x_2, x_3, \dots, x_n) + \omega_{12} x_1 x_2 + \omega_{13} x_1 x_3\right) = \\
+%     & \max\limits_{x_1, x_2, x_3 = \pm 1} 
+%     \left(\max_{x_2, x_3, x_4 = \pm 1} \left(F(x_3, \dots, x_n) + \sum_{j: 2\le j \le 4} \omega_{2j} x_2 x_j\right) + \omega_{12} x_1 x_2 + \omega_{13} x_1 x_3\right) = 
+% \end{align*}
+
+% Assume one has
+% \[\Phi(x_2, x_3) = \max_{x_4, x_5, ...} F(x_2, x_3, \dots)\]
+% than our problem is 
+% \[
+%     F(x_1, x_2, \dots, x_n) = \max\limits_{x_1, x_2, x_3 = \pm 1} \left(\Phi(x_2, x_3) + \omega_{12} x_1 x_2 + \omega_{23} x_2 x_3\right) - \text{maximum of 8 values}
+% \]
+
+% Overall: $8 \times n$ maximums, $2^k n$. 
+% % https://arxiv.org/abs/2101.00694
+% }
+
+
+
+\begin{proof}
+It is well-known, that tree is a bipartite graph and hence the MaxCut value equals to the total sum of edges in the graph $$\max_{\substack{x: x_i^2 = 1}} x^T L_{tree} x = 4 \sum_{i} \sum_{j > i} w_{ij}$$
 
 Then it is easy to conclude, that if $L_T = L_{tree} + Diagonal$, then 
 $$\max_{\substack{x: x_i^2 = 1}} x^T L_T x = 4 \sum_{i} \sum_{j > i} w_{ij} + \tr(Diagonal)$$
@@ -129,132 +224,224 @@ Let $t_{ij}$ be the weight of an edge between vertexes i and j in the tree.  $$D
     \vdots & \vdots & \vdots & \ddots & \vdots \\
     t_{n1} & t_{n2} & t_{n3} & \dots  & (\sum_{i = 1}^n t_{ni})
 \end{bmatrix}$$
-This matrix is symmetric and diagonally dominant with positive diagonal entries. It is known that such matrix is PSD. 
+This matrix is symmetric and diagonally dominant with positive diagonal entries. It is known that such matrix is PSD. Or in this case it is obvious since $$x^T (Diag(\xi) - L_T) x = \sum_{i = 1}^n \sum_{j = i + 1}^n t_{ij} (x_{i} + x_{j})^2 \ge 0$$
+\end{proof}
+% \end{lemma}
+Later we will refer to the Dual as SDP.
+
+\paragraph{$k$-diagonal hierarchy}
+
+Let's define $k$-diagonal hierarchy this way:
+\[D_k = \min_{\substack{T: T = T^\top \succeq A\\ T\in(2 k + 1)-diag}} \max x^\top T x\]
+
+Then we can see, that
+\[OPT = D_n \le \dots \le D_1 = SDP \]
+since inequalities are obvious, the first equality is true due to T = A being the optimal matrix for OPT and the second equality is true due to Lemma 3.1. 
+
+\paragraph{$k$-diagonal algorithm}
+
+Now we are ready to describe the k-diagonal algorithm. 
+First, we note that for fixed k if T is (2 k + 1)-diagonal matrix $$\max_{\substack{x_i^2 = 1}} x^\top T x$$ can be solved in O(n) time by dynamic programming. It is possible to calculate a two-dimensional array dp, where for $1 \le i \le n$, $0 \le mask \le 2^{k-1} - 1$ $$dp[i][mask] =  \max_{\substack{x_i^2 = 1\\x_{i - k + 1},...x_{i-1},x_i=mask}} x^\top T_i x,$$ where 1)$T_i$, is $n \times n$ matrix which is made out of matrix T by setting all the values outside top left $k \times k$ matrix to zeros. 2) It is known, how this and the previous k - 1 vertexes are distributed between parts of cut: ones in $mask$ correspond to the vertexes from one part of the cut, and mimus ones in $mask$ correspond to the vertexes from another one. 
+$dp[i][b_1, ..., b_n]$ can be easily recalculated by $dp[i][-1, b_1, ..., b_{n - 1}]$, $dp[i][1, b_1, ..., b_{n - 1}]$ and $L[i - k][i], L[i-k + 1][i], ..., L[i][i]$
+
+It means, that we can find the optimal value of $H_k$ using gradient-free methods of optimization and solving $\max_{\substack{x_i^2 = 1}} x^\top T x$ with oracle, which uses described dynamic programming and works for O(n) time.
+
+Finally, we can restore the final cut corresponding as the cut we get from this optimization.
+\section{Computational experiment}
+\subsection{Data}
+We consider well known BiqMac dataset for testing our solution and comparing it with others.
+There are different types of graphs in this dataset:
+
+1. g05-n.i For each dimension unweighted graphs with edge probability 0.5. n=60,80,100.
+\\
+2. pm1s-n.i For each dimension weighted graphs with edge weights chosen uniformly from {0,1} and density 0.1. n=80,100
+\\
+3. pm1d-n.i For each dimension weighted graphs with edge weights chosen uniformly from {0,1} and density 0.99. n=80,100
+\\
+% 4. wd-100.i For each density graphs with integer edge weights chosen from [0,10] and density d=0.1,0.5,0.9, n=100.
+% \\
+4. pwd-100.i For each density graphs with integer edge weights chosen from [0,10] and density d=0.1,0.5,0.9, n=100.
+
+% Additionally, it is essential to identify and extract word segments from certain documents to assess topic interpretability. Acquiring these specific data segments poses a challenge for the experiment due to the lack of a defined source.
+
+\subsection{Plan of experiment}
+% \pr
+1. Implement standard MaxCut solution
+
+2. Implement new MaxCut solution
+
+3. Compare the average ratio of cut value divided by total maximum cut with SDP solution and new solutions  using different sets of graphs
+
+We refer to the solution described in [7] and implemented in [3] as basic solution or SDP, while the Dual solution refers to one solving problem which we call Dual. We refer to the k-diagonal optimization solutions as $D_k$.
+\
+
+% (TODO: add k-diagonal results to the comparison table)
+
+% k-diagonal results provided significantly less quality than expected and show them  
+
+% \newpage
+
+\subsection{Comparison}
+% \newpage
+ Unfortunately, as we can observe, our solution does not show significant increase in accuracy on many different types of graphs. But it is more effective on the graphs, which laplacians have a small number of diagonals (it shows optimal results for such graphs).
+
+ Here is the comparison 
+% \begin{table}[ht]
+%         \centering
+%         \begin{tabular}{|c|c|c|c|c|c|c|}
+%          \hline
+%          Test & $SDP$ & $Dual$ & $\mathbf{D_1}$ & $\mathbf{D_3}$ & $\mathbf{D_5}$ & $\mathbf{D_7}$ \\ [0.5ex] 
+%          \hline
+%          g05-60   & 0.9728  & 0.8311  & 0.8425  & 0.8504  & 0.8643 & 0.8304 \\ 
+%          \hline
+%          g05-80   & 0.9744  & 0.8492  & 0.8482  & 0.8579  & 0.8622 & 0.8683 \\ 
+%          \hline
+%          g05-100  & 0.9771  & 0.8653  & 0.8692  & 0.8730  & 0.9004 & 0.9040 \\ 
+%          \hline
+%          pw01-100 & 0.9525  & 0.6711  & 0.6698  & 0.6955  & 0.7112 & 0.7102  \\ 
+%          \hline
+%          pw05-100 & 0.9740  & 0.8405  & 0.8578 & 0.8618  & 0.8795 & 0.8860 \\ 
+%          \hline
+%          pw09-100 & 0.9843  & 0.9057  & 0.8941  & 0.9150  & 0.9234  & 0.9257 \\
+%          \hline
+%         \end{tabular}
+%         \caption{Results comparision}
+%     \end{table}
+% \centering
+\begin{table}[ht]
+        \centering
+
+\begin{tabular}{|c|c|c|c|c|c|c|c|}
+
+         \hline
+         Test & $\Dual$ & $\mathbf{D_1}$ & $\mathbf{D_3}$ & $\mathbf{D_5}$ & $\mathbf{D_7}$ & $\mathbf{D_{19}}$ & $\SDP$ \\ [0.5ex] 
+         \hline
+         g05-60   & 0.8951 & 0.8971 & 0.902 & 0.9055 & 0.9042 & 0.9187 & 0.9731 \\ 
+         \hline
+         g05-80   & 0.9042 & 0.9033 & 0.9009 & 0.9079 & 0.9107 & 0.9197 & 0.9743 \\ 
+         \hline
+         g05-100  & 0.9062 & 0.906 & 0.9107 & 0.9102 & 0.9152 & 0.923 & 0.9772 \\ 
+         \hline
+         pw01-100 & 0.7706 & 0.7658 & 0.7772 & 0.7788 & 0.7767 & 0.7828 & 0.9525  \\ 
+         \hline
+         pw05-100 & 0.8919 & 0.89 & 0.8947 & 0.8969 & 0.8964 & 0.9036 & 0.9736 \\ 
+         \hline
+         pw09-100 & 0.9359 & 0.9378 & 0.9396 & 0.943 & 0.9441 & 0.9541 & 0.9839 \\
+         \hline
+        \end{tabular}
+        \caption{Results comparision}
+    \end{table}
+
+\begin{figure}[!htbp]
+
+ \subfloat{
+    \includegraphics[width=0.45\textwidth]{images/g05_60.png}
+    \label{fig:subfig1}
+  }
+   \hspace{0.05\textwidth} % Adjust the horizontal space between the subfigures
+  \subfloat{
+    \includegraphics[width=0.45\textwidth]{images/g05_80.png}
+    \label{fig:subfig2}
+  }
+  \\
+  \subfloat{
+    \includegraphics[width=0.45\textwidth]{images/g05_100.png}
+    \label{fig:subfig1}
+  }
+   \hspace{0.05\textwidth} % Adjust the horizontal space between the subfigures
+  \subfloat{
+    \includegraphics[width=0.45\textwidth]{images/pw01_100.png}
+    \label{fig:subfig2}
+  }
+  \\
+  \subfloat{
+    \includegraphics[width=0.45\textwidth]{images/pw05_100.png}
+    \label{fig:subfig1}
+  }
+   \hspace{0.05\textwidth} % Adjust the horizontal space between the subfigures
+  \subfloat{
+    \includegraphics[width=0.45\textwidth]{images/pw09_100.png}
+    \label{fig:subfig2}
+  }
+  
+
+\end{figure}
+\newpage
 
 
 
 
 
-% \min_{\substack{\xi: \\  Diag(\xi) \succeq L}} \tr(Diag(\xi))
-% \lipsum[4] See Section \ref{sec:headings}.
+\section{Conclusion}
+This paper presents a new approach to finding maximum cut in the graph, using idea of approximating maxcut by tractable maxcuts of graphs, which laplacian may be presented as k-diagonal matrices. The accuracy of approximation of new approach compared with the well-known Goemans-Williamson solution.
 
-% \subsection{Headings: second level}
-% \lipsum[5]
-% \begin{equation}
-% 	\xi _{ij}(t)=P(x_{t}=i,x_{t+1}=j|y,v,w;\theta)= {\frac {\alpha _{i}(t)a^{w_t}_{ij}\beta _{j}(t+1)b^{v_{t+1}}_{j}(y_{t+1})}{\sum _{i=1}^{N} \sum _{j=1}^{N} \alpha _{i}(t)a^{w_t}_{ij}\beta _{j}(t+1)b^{v_{t+1}}_{j}(y_{t+1})}}
-% \end{equation}
+\section{Future plans}
+In future we want to implement the similar oracul for graphs with bounded tree-width, using the tree-width hierarchy.
 
-% \subsubsection{Headings: third level}
-% \lipsum[6]
+\[H_k = \min_{\substack{T: T = T^\top \succeq A\\ \tw(T) \le k}} \max x^\top T x,\qquad OPT = H_k \le \dots \le H_1 = Dual \]
+\vspace{0.8 cm}
+\\
+\\
+And we will try to explore different heuristics, for example:
 
-% \paragraph{Paragraph}
-% \lipsum[7]
-
+Having $T$, optimal approximation with $\tw(T)=1$ (tree), incrementally add edges of the graph with the largest weight to $T$ keeping $\tw(T) \le k$.
 
 
-% \section{Examples of citations, figures, tables, references}
-% \label{sec:others}
-
-% \subsection{Citations}
-% Citations use \verb+natbib+. The documentation may be found at
-% \begin{center}
-% 	\url{http://mirrors.ctan.org/macros/latex/contrib/natbib/natnotes.pdf}
-% \end{center}
-
-% Here is an example usage of the two main commands (\verb+citet+ and \verb+citep+): Some people thought a thing \citep{kour2014real, hadash2018estimate} but other people thought something else \citep{kour2014fast}. Many people have speculated that if we knew exactly why \citet{kour2014fast} thought this\dots
-
-% \subsection{Figures}
-% \lipsum[10]
-% See Figure \ref{fig:fig1}. Here is how you add footnotes. \footnote{Sample of the first footnote.}
-% \lipsum[11]
-
-% \begin{figure}
-% 	\centering
-% 	\includegraphics[width=0.5\textwidth]{../figures/log_reg_cs_exp.eps}
-% 	\caption{Sample figure caption.}
-% 	\label{fig:fig1}
-% \end{figure}
-
-% \subsection{Tables}
-% See awesome Table~\ref{tab:table}.
-
-% The documentation for \verb+booktabs+ (`Publication quality tables in LaTeX') is available from:
-% \begin{center}
-% 	\url{https://www.ctan.org/pkg/booktabs}
-% \end{center}
 
 
-% \begin{table}
-% 	\caption{Sample table title}
-% 	\centering
-% 	\begin{tabular}{lll}
-% 		\toprule
-% 		\multicolumn{2}{c}{Part}                   \\
-% 		\cmidrule(r){1-2}
-% 		Name     & Description     & Size ($\mu$m) \\
-% 		\midrule
-% 		Dendrite & Input terminal  & $\sim$100     \\
-% 		Axon     & Output terminal & $\sim$10      \\
-% 		Soma     & Cell body       & up to $10^6$  \\
-% 		\bottomrule
-% 	\end{tabular}
-% 	\label{tab:table}
-% \end{table}
-
-% \subsection{Lists}
-% \begin{itemize}
-% 	\item Lorem ipsum dolor sit amet
-% 	\item consectetur adipiscing elit.
-% 	\item Aliquam dignissim blandit est, in dictum tortor gravida eget. In ac rutrum magna.
-% \end{itemize}
 
 
 
 
 \bibliographystyle{unsrtnat}
 \bibliography{references}
-TODO: эта версия пока для себя, переделать все ссылки на лекции на ссылки на соответствующие статьи
+% TODO: change the format of all the references to proper one and change the lecture references to the 
+
 [1] Goemans-Williamson MAXCUT Approximation Algorithm by Jin-Yi Cai, Christopher Hudzik, Sarah Knoop, 2003:
-https://pages.cs.wisc.edu/~jyc/02-810notes/lecture20.pdf \\
+\href{https://pages.cs.wisc.edu/~jyc/02-810notes/lecture20.pdf}{https://pages.cs.wisc.edu/~jyc/02-810notes/lecture20.pdf} \\
 
 [2] The Lovasz-Schrijver relaxation by Madhur Tulsiani, 2010: 
-https://home.ttic.edu/~madhurt/Papers/ls.pdf \\
+\href{https://home.ttic.edu/~madhurt/Papers/ls.pdf}{https://home.ttic.edu/~madhurt/Papers/ls.pdf} \\
 
+[3] Implementaion of SDP Solution: \href{}{https://github.com/pandrey-fr/maxcut}
 % [3] Introduction to the SDP by Robert M. Freund, 2004: https://ocw.mit.edu/courses/15-084j-nonlinear-programming-spring-2004/a632b565602fd2eb3be574c537eea095_lec23_semidef_opt.pdf\\
 
 [4] Treewidth: 
-https://www.cs.cmu.edu/~odonnell/toolkit13/lecture17.pdf\\
+\href{https://www.cs.cmu.edu/~odonnell/toolkit13/lecture17.pdf}{https://www.cs.cmu.edu/~odonnell/toolkit13/lecture17.pdf}\\
 
 [5] MAX CUT approximation algorithm and UGC-hardness, Lecture by Irit Dinur and Amey Bhangale:
-https://www.wisdom.weizmann.ac.il/~dinuri/courses/19-inapprox/lec6.pdf \\
+\href{https://www.wisdom.weizmann.ac.il/~dinuri/courses/19-inapprox/lec6.pdf}{https://www.wisdom.weizmann.ac.il/~dinuri/courses/19-inapprox/lec6.pdf} \\
 
 [6] Semidefinite Programming versus Burer-Monteiro Factorization for Matrix
 Sensing by Baturalp Yalcin, Ziye Ma, Javad Lavaei, Somayeh Sojoudi, 2022
-https://arxiv.org/abs/2208.07469v1\\
+\href{https://arxiv.org/abs/2208.07469v1}{https://arxiv.org/abs/2208.07469v1}\\
 
-[7] 0.878-approximation for the Max-Cut problem, Lecture by Divya Padmanabhan, 2022: https://www.iitgoa.ac.in/~sreejithav/misc/maxcut.pdf\\
+[7] 0.878-approximation for the Max-Cut problem, Lecture by Divya Padmanabhan, 2022: \href{https://www.iitgoa.ac.in/~sreejithav/misc/maxcut.pdf}{https://www.iitgoa.ac.in/~sreejithav/misc/maxcut.pdf}\\
 
 [8] Rank optimality for the Burer-Monteiro factorization by Irène Waldspurger, Alden Waters, 2019 
-https://arxiv.org/abs/1812.03046\\
+\href{https://arxiv.org/abs/1812.03046}{https://arxiv.org/abs/1812.03046}\\
 
 [9] Semidefinite relaxation and nonconvex quadratic optimization by Yury Nesterov, 1997
-https://www.tandfonline.com/doi/abs/10.1080/10556789808805690\\
+\href{https://www.tandfonline.com/doi/abs/10.1080/10556789808805690}{https://www.tandfonline.com/doi/abs/10.1080/10556789808805690}\\
 
 [10] Datasets: Texas Data Repository:
-https://dataverse.tdl.org/dataset.xhtml?persistentId=doi:10.18738/T8/VLTIVC\\  
+\href{https://dataverse.tdl.org/dataset.xhtml?persistentId=doi:10.18738/T8/VLTIVC}{https://dataverse.tdl.org/dataset.xhtml?persistentId=doi:10.18738/T8/VLTIVC}\\  
 
 [11] Datasets: Biq Mac Library:
-https://biqmac.aau.at/biqmaclib.html\\ 
+\href{https://biqmac.aau.at/biqmaclib.html}{https://biqmac.aau.at/biqmaclib.html}\\ 
 
 [12] Datasets: MaxCut and BQP Instance Library:
-http://bqp.cs.uni-bonn.de/library/html/index.html\\ 
+\href{http://bqp.cs.uni-bonn.de/library/html/index.html}{http://bqp.cs.uni-bonn.de/library/html/index.html}\\ 
 
 [13] Datasets: MaxCut Instances:
-https://grafo.etsii.urjc.es/optsicom/maxcut.html#best-known-values\\
+\href{https://grafo.etsii.urjc.es/optsicom/maxcut.html#best-known-values}{https://grafo.etsii.urjc.es/optsicom/maxcut.html#best-known-values}\\
 
-[14] Ellipsoid algorithm: https://www.cs.toronto.edu/~avner/teaching/S5-2411/ln/lecture8.pdf
+[14] Ellipsoid algorithm: \href{https://www.cs.toronto.edu/~avner/teaching/S5-2411/ln/lecture8.pdf}{https://www.cs.toronto.edu/~avner/teaching/S5-2411/ln/lecture8.pdf}
 
 [15] Michel X. Goemans and David P. Williamson. Improved approximation algorithms for maximum cut and satisfiability problems using semidefinite programming. Journal of the ACM, 42(6):1115–1145, 1995
+
+[16] Subhash Khot, Guy Kindler, Elchanan Mossel, Ryan O’Donnell Optimal Inapproximability Results for MAX-CUT
+and Other 2-variable CSPs?\href{https://www.cs.cornell.edu/~abrahao/tdg/papers/KKMO-maxcut.pdf}{https://www.cs.cornell.edu/~abrahao/tdg/papers/KKMO-maxcut.pdf}
 
 
 \end{document}
