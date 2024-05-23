@@ -1,4 +1,9 @@
+For the basic solution we use Paul Andrey's repository and add there other methods for solving MaxCut via k-diagonal optimization and Dual approach. The soluiton can be launched from the file maxcut/__init__.py. 
+
+We provide here the description and license from the Paul's repository:
+
 # maxcut: Max-Cut problem solving tools following a variety of approaches
+
 
 Implementation realized in the context of scholar project on the max-cut
 problem.
